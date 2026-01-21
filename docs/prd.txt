@@ -1,0 +1,479 @@
+<overview>
+
+## Problem Statement
+Land deed and property records are high-value legal artifacts that are vulnerable to tampering, document substitution, and process fraud—especially when workflows rely on manual handling and ad‑hoc storage. Staff and verifiers need a **locally operated** system that can securely store deed documents, compute verifiable fingerprints (hashes), enable re-verification against the stored fingerprints, and maintain an auditable trail of all actions to support legal admissibility and operational oversight.
+
+Key pain points:
+- Records can be altered after upload without clear detection.
+- Verification processes are inconsistent and difficult to audit.
+- Role-based separation of duties (staff vs verifier vs registrar vs admin) is hard to enforce.
+- Executives need dashboards, reporting, and geographic visibility (GIS) to identify trends and fraud hotspots.
+- The system must work well with **scanned content** (commonly found in deed workflows).
+
+## Target Users
+- **Staff (Uploader/Clerk)**: Upload deed documents, associate them with properties, view their upload history, and see verification status.
+- **Verifier**: Receive/choose documents to verify, upload the comparison document, record verification decisions and reasons.
+- **Chief Registrar**: Oversight across the organization; view global stats, GIS overlays, audit logs, and manage/document retention actions.
+- **Admin/System Administrator**: Manage system configuration, users/roles, access policies, and operational tooling (e.g., storage cleanup, diagnostics).
+
+## Success Metrics
+- **Integrity detection**: 100% of verification checks produce a deterministic match/mismatch result against stored SHA‑256 hashes.
+- **Audit completeness**: 100% of user actions (upload/hash/verify/reject/delete/export) are logged with timestamp + actor + target record.
+- **RBAC compliance**: 0 unauthorized access paths to protected operations (e.g., deletions limited to registrar/admin).
+- **Operational efficiency**: Reduce average time to verify a document by ≥ 50% vs manual baseline (measured after rollout).
+- **Reliability**: ≥ 99.5% successful upload/hash operations under expected load; no data loss incidents.
+
+</overview>
+
+---
+
+<functional-decomposition>
+
+## Capability Tree
+
+### Capability: Authentication & Role-Based Access Control (RBAC)
+Secure access control for staff, verifiers, registrar, and admins using Supabase Auth with role enforcement in both UI and backend.
+
+#### Feature: User sign-in/sign-up and session management
+- **Description**: Authenticate users and manage sessions.
+- **Inputs**: Email/password (or configured auth method), session tokens.
+- **Outputs**: Auth session, user identity.
+- **Behavior**: Use Supabase Auth; persist session securely in the Next.js app.
+
+#### Feature: Role assignment and authorization checks
+- **Description**: Enforce access rules based on roles (staff, verifier, chief_registrar, admin).
+- **Inputs**: User id, role claims, requested action context.
+- **Outputs**: Allow/deny decisions.
+- **Behavior**: Server-side authorization checks in Edge Functions; UI-level gating for navigation/controls.
+
+---
+
+### Capability: Document Ingestion, Storage & Hashing
+Upload, store, and hash deed documents with metadata linkage to properties and users.
+
+#### Feature: Document upload with metadata capture
+- **Description**: Upload a deed document and capture metadata (property id, doc number, uploader).
+- **Inputs**: File (PDF/Office/scanned), metadata fields.
+- **Outputs**: Stored file reference, document record.
+- **Behavior**: Upload to Supabase Storage; record metadata in Postgres.
+
+#### Feature: SHA-256 hash computation and persistence
+- **Description**: Compute a SHA‑256 fingerprint and persist it for later verification.
+- **Inputs**: File bytes/stream, document id.
+- **Outputs**: SHA‑256 hash string, hash record with timestamp.
+- **Behavior**: Use Edge Function (or backend service) to compute hash; store in DB linked to document.
+
+#### Feature: Status lifecycle management
+- **Description**: Track document status (e.g., hashed/encrypted, verified, rejected, flagged).
+- **Inputs**: Document id, verification outcomes, admin actions.
+- **Outputs**: Updated status and timeline.
+- **Behavior**: Update canonical document status; maintain immutable status events in logs/audit trail.
+
+---
+
+### Capability: Verification Workflow & Decision Logging
+Re-upload a candidate document to verify by hashing and comparing to the stored hash; log outcome and reason.
+
+#### Feature: Re-hash and compare to stored hash
+- **Description**: Verify integrity by recomputing SHA‑256 and comparing with stored hash.
+- **Inputs**: Document id, verification upload file.
+- **Outputs**: Match/mismatch result; derived discrepancy metadata.
+- **Behavior**: Compute SHA‑256 of uploaded verification file; compare to latest stored hash for the document; return result.
+
+#### Feature: Verification decision capture
+- **Description**: Record verification status (approved/verified or rejected) and reason.
+- **Inputs**: Verifier id, document id, decision, reason.
+- **Outputs**: Verification record; updated document status.
+- **Behavior**: Insert verification row; update document status; append audit log event.
+
+---
+
+### Capability: Auditing, Logs & Compliance
+Maintain a complete, queryable audit trail for transparency, compliance, and legal admissibility.
+
+#### Feature: Global activity logging
+- **Description**: Log all key actions and state transitions.
+- **Inputs**: Actor id, action type, target id, structured details.
+- **Outputs**: Log record with timestamp.
+- **Behavior**: Write immutable log rows for every action; include context (ip/device if available).
+
+#### Feature: Retention and controlled deletion
+- **Description**: Allow registrar/admin to delete stored verification uploads and/or originals per policy.
+- **Inputs**: Actor id, storage object reference, document id.
+- **Outputs**: Deletion record + audit event.
+- **Behavior**: Enforce authorization; delete from Storage; preserve audit log and DB record markers.
+
+---
+
+### Capability: Properties & GIS Layer
+Store property metadata and geometry, and serve GeoJSON for mapping and analytics overlays.
+
+#### Feature: Property registry and spatial fields
+- **Description**: Maintain property records (property number, address, geometry).
+- **Inputs**: Property metadata, geometry (PostGIS).
+- **Outputs**: Property records.
+- **Behavior**: CRUD operations with validation; spatial indexes for query performance.
+
+#### Feature: GeoJSON map layers by status
+- **Description**: Provide GIS layers showing verified/rejected/flagged/new uploads.
+- **Inputs**: Filters (region, date range, status), viewport bounds.
+- **Outputs**: GeoJSON FeatureCollections.
+- **Behavior**: Query properties joined with document statuses; return styled GeoJSON attributes.
+
+---
+
+### Capability: Dashboards, Analytics & Reporting
+Provide role-appropriate dashboards, stats, and exports.
+
+#### Feature: Staff dashboard
+- **Description**: Show uploads, statuses, and verification queue visibility relevant to staff.
+- **Inputs**: User id, filters.
+- **Outputs**: Lists, counts, recent activity.
+- **Behavior**: Query by uploader; show status history and queue.
+
+#### Feature: Verifier dashboard
+- **Description**: Show assigned/available documents and decision tools.
+- **Inputs**: Verifier id, filters.
+- **Outputs**: Assigned docs, verification history.
+- **Behavior**: Provide work queue; decision capture UI; show past outcomes.
+
+#### Feature: Chief registrar dashboard (global analytics)
+- **Description**: Show organization-wide stats, rejection causes, GIS overlays, and exports.
+- **Inputs**: Date range, region, user, status filters.
+- **Outputs**: Charts, tables, maps, exports (CSV/PDF).
+- **Behavior**: Aggregate queries; produce analytics; generate reports via Edge Functions.
+
+</functional-decomposition>
+
+---
+
+<structural-decomposition>
+
+## Repository Structure
+
+```
+ver/
+├── app/                          # Next.js App Router pages, layouts, UI routes
+├── components/                   # Shared UI components (shadcn)
+├── lib/
+│   ├── supabase/                 # Supabase client helpers (browser/server)
+│   ├── auth/                     # Role checks, session helpers
+│   ├── hashing/                  # Hash utilities / shared types (non-secret)
+│   ├── validation/               # Input validation and schemas
+│   └── gis/                      # GeoJSON helpers, map layer transforms
+├── supabase/
+│   ├── migrations/               # SQL migrations (tables prefixed ver_)
+│   └── functions/                # Edge Functions (hash, verify, reports, gis)
+├── docs/                         # Product/technical docs including this PRD
+├── route_tests/                  # Route audit & verification artifacts
+├── public/                       # Static assets
+└── README.md
+```
+
+## Module Definitions
+
+### Module: lib/supabase
+- **Maps to capability**: Authentication & RBAC; data access
+- **Responsibility**: Centralize Supabase clients and typed access patterns.
+- **Exports**:
+  - `createBrowserClient()`
+  - `createServerClient()`
+
+### Module: lib/auth
+- **Maps to capability**: Authentication & RBAC
+- **Responsibility**: Role parsing, authorization helpers, route guards.
+- **Exports**:
+  - `requireRole(role | roles[])`
+  - `getUserRole(userId)`
+
+### Module: supabase/functions/hash-document
+- **Maps to capability**: Document Ingestion, Storage & Hashing
+- **Responsibility**: Compute SHA‑256 for uploaded files and persist hash rows.
+- **Exports**:
+  - HTTP handler: `POST /hash-document`
+
+### Module: supabase/functions/verify-document
+- **Maps to capability**: Verification Workflow & Decision Logging
+- **Responsibility**: Re-hash verification file, compare to stored hash, write verification rows.
+- **Exports**:
+  - HTTP handler: `POST /verify-document`
+
+### Module: supabase/functions/gis-layers
+- **Maps to capability**: Properties & GIS Layer
+- **Responsibility**: Provide GeoJSON layers for UI mapping.
+- **Exports**:
+  - HTTP handler: `GET /gis-layers`
+
+### Module: supabase/functions/reports
+- **Maps to capability**: Dashboards, Analytics & Reporting
+- **Responsibility**: Aggregate metrics and generate CSV/PDF reports.
+- **Exports**:
+  - HTTP handler: `GET /reports/*`
+
+### Module: app/(dashboards)
+- **Maps to capability**: Dashboards, Analytics & Reporting
+- **Responsibility**: UI routes for staff/verifier/registrar/admin dashboards with RBAC gating.
+- **Exports**:
+  - Next.js routes and server actions
+
+</structural-decomposition>
+
+---
+
+<dependency-graph>
+
+## Dependency Chain
+
+### Foundation Layer (Phase 0)
+No dependencies - these are built first.
+
+- **ver-db-schema**: Database schema + migrations (all tables prefixed `ver_`)
+- **supabase-auth-rbac**: Auth configuration + role model + authorization helpers
+- **shared-types-validation**: Shared types, input validation schemas, error handling conventions
+
+### Service Layer (Phase 1)
+- **storage-upload-service**: Depends on [[ver-db-schema], [supabase-auth-rbac], [shared-types-validation]]
+- **hashing-service**: Depends on [[storage-upload-service], [shared-types-validation]]
+- **audit-logging-service**: Depends on [[ver-db-schema], [supabase-auth-rbac]]
+
+### Workflow Layer (Phase 2)
+- **verification-service**: Depends on [[hashing-service], [audit-logging-service], [supabase-auth-rbac]]
+- **properties-gis-service**: Depends on [[ver-db-schema], [audit-logging-service]]
+- **reporting-service**: Depends on [[ver-db-schema], [audit-logging-service]]
+
+### Presentation Layer (Phase 3)
+- **dashboards-ui**: Depends on [[supabase-auth-rbac], [storage-upload-service], [verification-service], [properties-gis-service], [reporting-service]]
+
+</dependency-graph>
+
+---
+
+<implementation-roadmap>
+
+## Development Phases
+
+### Phase 0: Foundation
+**Goal**: Establish secure identity, data model, and shared primitives.
+
+**Entry Criteria**: Clean repository; environment configured; Supabase (Docker-hosted) reachable.
+
+**Tasks**:
+- [ ] Create Supabase schema migrations with `ver_`-prefixed tables (depends on: none)
+  - Acceptance criteria: All tables exist; RLS policies drafted; migrations apply cleanly.
+  - Test strategy: Run migrations; smoke query each table; validate RLS blocks unauthorized reads.
+
+- [ ] Implement RBAC model + helpers for Next.js and Edge Functions (depends on: none)
+  - Acceptance criteria: Routes/actions enforce role checks consistently.
+  - Test strategy: Unit tests for role checks; manual role switching in dev.
+
+**Exit Criteria**: Services can read/write to DB securely; auth + role enforcement is working end-to-end.
+
+**Delivers**: A secured foundation to build upload/hash/verify workflows.
+
+---
+
+### Phase 1: Ingestion + Hashing
+**Goal**: Upload docs, store them, compute SHA‑256, and persist hashes.
+
+**Entry Criteria**: Phase 0 complete
+
+**Tasks**:
+- [ ] Implement upload flow (UI + API) to Supabase Storage with metadata (depends on: [[Phase 0]])
+- [ ] Implement hashing Edge Function and persist `ver_document_hashes` records (depends on: [[upload flow]])
+- [ ] Implement audit log capture for uploads/hashes (depends on: [[Phase 0]])
+
+**Exit Criteria**: A staff user can upload a deed and see a stored hash recorded.
+
+**Delivers**: Tamper-evident fingerprinting for all uploaded documents.
+
+---
+
+### Phase 2: Verification + Decision Logs
+**Goal**: Re-hash verification uploads, compare, record decisions with reasons, and update statuses.
+
+**Entry Criteria**: Phase 1 complete
+
+**Tasks**:
+- [ ] Implement verify Edge Function: compare uploaded doc hash vs stored hash (depends on: [[Phase 1]])
+- [ ] Implement verification decision logging and status updates (depends on: [[verify function]])
+- [ ] Implement registrar/admin controls for retention/deletion with audit trails (depends on: [[Phase 0]])
+
+**Exit Criteria**: A verifier can verify/reject with reason; system shows outcome in dashboards and logs.
+
+**Delivers**: End-to-end integrity verification with legal-grade auditability.
+
+---
+
+### Phase 3: Dashboards + GIS + Reporting
+**Goal**: Provide operational and executive visibility, including map overlays and exports.
+
+**Entry Criteria**: Phase 2 complete
+
+**Tasks**:
+- [ ] Implement staff/verifier dashboards with queues and history (depends on: [[Phase 2]])
+- [ ] Implement registrar dashboard with analytics + rejection causes (depends on: [[Phase 2]])
+- [ ] Implement GIS layers endpoint and map UI overlays (depends on: [[Phase 2]])
+- [ ] Implement reports export (CSV/PDF) (depends on: [[Phase 2]])
+
+**Exit Criteria**: Registrar can view global stats, map overlays, and export reports.
+
+**Delivers**: Full operational product experience.
+
+</implementation-roadmap>
+
+---
+
+<test-strategy>
+
+## Test Pyramid
+
+```
+        /\
+       /E2E\       ← 10% (End-to-end: auth → upload → hash → verify → dashboards)
+      /------\
+     /Integration\ ← 25% (Edge Functions + DB + Storage interactions)
+    /------------\
+   /  Unit Tests  \ ← 65% (RBAC, hashing utils, validators, mappers)
+  /----------------\
+```
+
+## Coverage Requirements
+- Line coverage: 75% minimum (raise to 85% for core hashing/verification modules)
+- Branch coverage: 70% minimum
+- Function coverage: 75% minimum
+- Statement coverage: 75% minimum
+
+## Critical Test Scenarios
+
+### Hashing
+**Happy path**:
+- Upload valid PDF → hash computed → `ver_document_hashes` row inserted
+- Expected: hash present, timestamp recorded, doc status updated
+
+**Edge cases**:
+- Scanned PDFs (large, image-heavy), Office docs
+- Expected: hashing completes within configured size/time limits
+
+**Error cases**:
+- Corrupt file or missing storage object
+- Expected: request fails with structured error; audit log records failure
+
+### Verification
+**Happy path**:
+- Re-upload identical content → hash matches
+- Expected: `ver_verifications` row shows verified; status updated; reason optional
+
+**Error cases**:
+- Re-upload altered content → mismatch
+- Expected: rejected with required reason; discrepancy recorded; audit log appended
+
+### Authorization
+**Happy path**:
+- Staff cannot delete; registrar/admin can
+- Expected: denied with 403 for staff; allowed for registrar/admin; logged
+
+## Test Generation Guidelines
+- Prefer deterministic hashing tests using fixed fixtures (small PDFs or generated buffers).
+- Integration tests should stub or use a local Supabase/Docker environment when feasible.
+- Ensure all audit logs are asserted for workflows (upload/hash/verify/delete/export).
+
+</test-strategy>
+
+---
+
+<architecture>
+
+## System Components
+- **Next.js (App Router) frontend**: Role-based dashboards, upload and verification UIs, GIS map views.
+- **Supabase Auth**: Identity, sessions, role claims.
+- **Supabase Storage**: Store original and verification-upload documents.
+- **Supabase Postgres (Docker-hosted)**: Core relational data, audit logs, and (optional) PostGIS geometry.
+- **Supabase Edge Functions**: Hashing, verification, GIS layer generation, reporting exports.
+
+## Data Models (All tables prefixed with `ver_`)
+
+### ver_profiles
+- Purpose: Extend auth users with application role and metadata.
+- Key fields: `id (uuid, FK to auth.users)`, `email`, `role`, `created_at`, `updated_at`
+
+### ver_properties
+- Purpose: Property registry and spatial metadata.
+- Key fields: `id`, `property_no`, `address`, `geom` (PostGIS geometry), `created_at`
+
+### ver_documents
+- Purpose: Canonical document record linked to a property.
+- Key fields: `id`, `property_id`, `doc_number`, `uploader_id`, `status`, `storage_path`, `created_at`
+
+### ver_document_hashes
+- Purpose: SHA‑256 fingerprints over time (supports re-hash history).
+- Key fields: `id`, `document_id`, `sha256_hash`, `created_at`
+
+### ver_verifications
+- Purpose: Verification outcomes and reasons.
+- Key fields: `id`, `document_id`, `verifier_id`, `status`, `reason`, `created_at`, `verification_storage_path (optional)`
+
+### ver_logs
+- Purpose: Immutable audit trail of actions.
+- Key fields: `id`, `actor_id`, `action`, `target_type`, `target_id`, `details (jsonb)`, `created_at`
+
+## Technology Stack
+- **Frontend**: Next.js **16.\*** (latest Next.js major = 16), React, TypeScript
+- **Styling/UI**: Tailwind CSS, shadcn/ui components
+- **Mapping**: Mapcn + Leaflet (GeoJSON overlays)
+- **Backend**: Supabase (Auth, Storage, Postgres on Docker), Supabase Edge Functions
+- **Hashing**: SHA‑256 via runtime crypto (Edge Function)
+
+**Decision: SHA‑256 hashing for integrity fingerprints**
+- **Rationale**: Deterministic, widely accepted, strong collision resistance for integrity checks.
+- **Trade-offs**: Does not encrypt content by itself; only detects tampering.
+- **Alternatives considered**: Signed hashes (HMAC) or digital signatures; can be added later for stronger non-repudiation.
+
+</architecture>
+
+---
+
+<risks>
+
+## Technical Risks
+**Risk**: Handling very large scanned PDFs (performance/timeouts)
+- **Impact**: High
+- **Likelihood**: Medium
+- **Mitigation**: Enforce size limits; stream hashing; background jobs if needed; clear UX feedback/progress.
+- **Fallback**: Offline hashing client-side + upload hash (with server verification) for extreme cases.
+
+**Risk**: Role misconfiguration leading to privilege escalation
+- **Impact**: High
+- **Likelihood**: Medium
+- **Mitigation**: Server-side RBAC enforcement everywhere; RLS policies; security review; least-privilege defaults.
+- **Fallback**: Temporarily lock high-risk actions to admin-only until policies are validated.
+
+## Dependency Risks
+- Supabase Docker deployment differences vs hosted Supabase: ensure schema/migrations are compatible and documented.
+
+## Scope Risks
+- GIS/analytics can expand quickly (heatmaps, advanced fraud detection). Keep initial GIS scope to status overlays + basic filters.
+
+</risks>
+
+---
+
+<appendix>
+
+## References
+- Source architecture document: `docs/Security Deeds Records01.md`
+
+## Glossary
+- **Deed**: Legal document proving ownership/transfer of property.
+- **Hash (SHA‑256)**: Cryptographic fingerprint used to detect tampering.
+- **RBAC**: Role-based access control.
+- **RLS**: Row-level security in Postgres/Supabase.
+- **GeoJSON**: Standard format for geographic features.
+
+## Open Questions
+- Should verification uploads always be retained, or only on mismatch?
+- Do we require digital signatures (non-repudiation) beyond hashing?
+- What is the maximum allowed upload size for scanned documents?
+- Do we need multi-tenancy (multiple registries) or single-organization deployment?
+
+</appendix>
+

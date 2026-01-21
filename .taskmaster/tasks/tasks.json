@@ -1,0 +1,696 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Database Schema Setup and Migrations",
+        "description": "Create Supabase database schema with all required tables prefixed with 'ver_' and implement Row Level Security (RLS) policies",
+        "details": "Create SQL migrations for ver_profiles, ver_properties, ver_documents, ver_document_hashes, ver_verifications, and ver_logs tables. Use Supabase CLI v1.127+ for migration management. Implement PostGIS extension for spatial data in ver_properties table with geometry column. Set up RLS policies for each table based on user roles. Create indexes for performance: btree on document_id, property_id, created_at columns, and spatial index (GIST) on geometry column. Use UUID primary keys with gen_random_uuid() defaults. Implement foreign key constraints with CASCADE deletes where appropriate.",
+        "testStrategy": "Run migrations against local Supabase Docker instance. Verify all tables exist with correct schema. Test RLS policies by attempting unauthorized access from different user contexts. Validate spatial queries work correctly with PostGIS functions. Check index performance with EXPLAIN ANALYZE on common query patterns.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Initialize Supabase Project and PostGIS Extension Setup",
+            "description": "Set up local Supabase Docker instance and configure PostGIS extension for spatial data support",
+            "dependencies": [],
+            "details": "Initialize local Supabase project using Docker. Install and configure PostGIS extension for spatial data handling. Set up Supabase CLI v1.127+ for migration management. Configure database connection settings and verify PostGIS functions are available for geometry operations.",
+            "status": "pending",
+            "testStrategy": "Verify Supabase Docker containers are running. Test PostGIS extension installation by executing spatial queries. Confirm CLI connection to local instance."
+          },
+          {
+            "id": 2,
+            "title": "Create Core Database Tables with ver_ Prefix",
+            "description": "Create SQL migrations for all required tables with proper schema structure and UUID primary keys",
+            "dependencies": [
+              1
+            ],
+            "details": "Create migration files for ver_profiles, ver_properties, ver_documents, ver_document_hashes, ver_verifications, and ver_logs tables. Implement UUID primary keys with gen_random_uuid() defaults. Add geometry column to ver_properties table for spatial data. Define proper column types, constraints, and foreign key relationships with CASCADE deletes where appropriate.",
+            "status": "pending",
+            "testStrategy": "Run migrations against local database. Verify all tables exist with correct schema structure. Test UUID generation and foreign key constraints. Validate geometry column functionality."
+          },
+          {
+            "id": 3,
+            "title": "Implement Row Level Security (RLS) Policies",
+            "description": "Create comprehensive RLS policies for each table based on user roles and access patterns",
+            "dependencies": [
+              2
+            ],
+            "details": "Enable RLS on all ver_ tables. Create policies for staff, verifier, chief_registrar, and admin roles. Implement read/write restrictions based on user roles and data ownership. Set up policies for ver_profiles (users can only access their own), ver_documents (role-based access), ver_verifications (verifiers can create, all can read), and ver_logs (admin read-only).",
+            "status": "pending",
+            "testStrategy": "Test RLS policies by attempting unauthorized access from different user contexts. Verify role-based data filtering works correctly. Test policy enforcement on INSERT, UPDATE, DELETE operations."
+          },
+          {
+            "id": 4,
+            "title": "Create Performance Indexes and Spatial Indexing",
+            "description": "Implement btree and spatial indexes for optimal query performance across all tables",
+            "dependencies": [
+              2
+            ],
+            "details": "Create btree indexes on frequently queried columns: document_id, property_id, created_at across relevant tables. Implement GIST spatial index on geometry column in ver_properties table for efficient spatial queries. Add composite indexes for common query patterns. Create indexes on foreign key columns and status fields for faster filtering operations.",
+            "status": "pending",
+            "testStrategy": "Use EXPLAIN ANALYZE to verify index usage in common queries. Test spatial query performance with GIST index. Benchmark query execution times before and after index creation. Validate index effectiveness on large datasets."
+          },
+          {
+            "id": 5,
+            "title": "Validate Schema Integration and Migration Testing",
+            "description": "Comprehensive testing of complete database schema with all components integrated",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "Execute full migration suite from clean database state. Test all table relationships and constraints. Verify RLS policies work correctly with indexes in place. Test spatial data insertion and querying with PostGIS functions. Validate that all UUID generation, foreign key cascades, and role-based access controls function as expected in integrated environment.",
+            "status": "pending",
+            "testStrategy": "Run complete migration suite on fresh database instance. Execute comprehensive test suite covering all table operations, spatial queries, and role-based access patterns. Perform load testing with sample data to validate performance and constraint enforcement."
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Authentication and RBAC Implementation",
+        "description": "Implement Supabase Auth integration with role-based access control for staff, verifier, chief_registrar, and admin roles",
+        "details": "Configure Supabase Auth with email/password authentication. Create lib/auth module with TypeScript interfaces for UserRole enum ('staff' | 'verifier' | 'chief_registrar' | 'admin'). Implement createBrowserClient() and createServerClient() in lib/supabase using @supabase/ssr v0.5+. Create middleware.ts for route protection using Next.js 16.* middleware. Implement requireRole() helper function for server actions and API routes. Set up user profile creation trigger in Postgres to auto-create ver_profiles record on auth.users insert. Use Supabase's built-in JWT claims for role storage.",
+        "testStrategy": "Unit tests for role validation functions. Integration tests for auth flow including sign-up, sign-in, and role assignment. Test middleware protection on protected routes. Verify JWT token contains correct role claims. Test session persistence across browser refreshes.",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Configure Supabase Auth with Email/Password Authentication",
+            "description": "Set up Supabase Auth configuration for email/password authentication with proper environment variables and client initialization",
+            "dependencies": [],
+            "details": "Configure Supabase project with Auth settings enabled. Set up environment variables for SUPABASE_URL and SUPABASE_ANON_KEY. Initialize Supabase clients using @supabase/ssr v0.5+ with createBrowserClient() and createServerClient() functions. Configure auth providers and email templates. Set up proper CORS settings and redirect URLs for local development and production environments.",
+            "status": "pending",
+            "testStrategy": "Test email/password sign-up and sign-in flows. Verify environment variables are properly loaded. Test client initialization in both browser and server contexts. Validate auth state persistence across page refreshes."
+          },
+          {
+            "id": 2,
+            "title": "Create TypeScript Auth Module with Role Interfaces",
+            "description": "Implement lib/auth module with TypeScript interfaces for UserRole enum and authentication utilities",
+            "dependencies": [
+              1
+            ],
+            "details": "Create lib/auth/index.ts with UserRole enum defining 'staff', 'verifier', 'chief_registrar', and 'admin' roles. Implement TypeScript interfaces for User, Session, and AuthState. Create utility functions for role checking, user session management, and auth state handling. Implement type-safe wrappers around Supabase auth methods with proper error handling and type assertions.",
+            "status": "pending",
+            "testStrategy": "Unit tests for role validation functions. Test TypeScript compilation with strict mode. Verify enum values match database constraints. Test utility functions with various user states and roles."
+          },
+          {
+            "id": 3,
+            "title": "Implement Next.js Middleware for Route Protection",
+            "description": "Create middleware.ts for protecting routes based on authentication status and user roles using Next.js 16.* middleware",
+            "dependencies": [
+              2
+            ],
+            "details": "Create middleware.ts in project root using Next.js 16.* middleware API. Implement route protection logic that checks authentication status and user roles. Define protected route patterns and role-based access rules. Handle redirects for unauthenticated users to login page and unauthorized users to appropriate dashboards. Implement session refresh logic and proper error handling for expired tokens.",
+            "status": "pending",
+            "testStrategy": "Test middleware protection on various route patterns. Verify unauthenticated users are redirected to login. Test role-based access restrictions. Validate session refresh functionality. Test middleware performance impact."
+          },
+          {
+            "id": 4,
+            "title": "Create requireRole Helper Function for Server Actions",
+            "description": "Implement requireRole() helper function for server actions and API routes with JWT claims validation",
+            "dependencies": [
+              2
+            ],
+            "details": "Create requireRole() function in lib/auth that validates user authentication and role permissions for server actions and API routes. Implement JWT token validation and role extraction from Supabase's built-in JWT claims. Add proper error handling for unauthorized access attempts. Create wrapper functions for common role checks (isStaff, isVerifier, isChiefRegistrar, isAdmin). Ensure function works with both server actions and API route handlers.",
+            "status": "pending",
+            "testStrategy": "Unit tests for requireRole function with different user roles. Test unauthorized access scenarios. Verify JWT claims extraction and validation. Test integration with server actions and API routes. Validate error messages and status codes."
+          },
+          {
+            "id": 5,
+            "title": "Set Up User Profile Creation Trigger in Postgres",
+            "description": "Create database trigger to automatically create ver_profiles record when new user signs up through Supabase Auth",
+            "dependencies": [
+              1
+            ],
+            "details": "Create PostgreSQL trigger function that automatically inserts a record into ver_profiles table when a new user is created in auth.users. Set up proper foreign key relationships and default role assignment. Implement trigger to handle user metadata and profile initialization. Ensure trigger handles edge cases like duplicate insertions and maintains data consistency. Configure proper permissions and security for the trigger function.",
+            "status": "pending",
+            "testStrategy": "Test trigger execution on user sign-up. Verify ver_profiles record creation with correct foreign key relationships. Test edge cases like rapid user creation and duplicate prevention. Validate trigger performance impact on auth operations."
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Shared Types and Validation Layer",
+        "description": "Create TypeScript types, Zod validation schemas, and error handling conventions for the application",
+        "details": "Create lib/validation module using Zod v3.22+ for runtime validation. Define TypeScript interfaces for all database entities (Document, Property, Verification, etc.). Create validation schemas for file uploads (max 50MB, allowed MIME types: application/pdf, application/msword, application/vnd.openxmlformats-officedocument). Implement error handling with custom error classes (ValidationError, AuthorizationError, DocumentNotFoundError). Create utility functions for sanitizing file names and validating property numbers. Use discriminated unions for document status types.",
+        "testStrategy": "Unit tests for all validation schemas with valid and invalid inputs. Test file upload validation with various file types and sizes. Verify error handling produces consistent error messages. Test TypeScript compilation with strict mode enabled.",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Core TypeScript Interfaces and Types",
+            "description": "Define TypeScript interfaces for all database entities and application types",
+            "dependencies": [],
+            "details": "Create lib/types/index.ts with TypeScript interfaces for ver_profiles, ver_properties, ver_documents, ver_document_hashes, ver_verifications, and ver_logs tables. Define UserRole enum ('staff' | 'verifier' | 'chief_registrar' | 'admin'). Create discriminated unions for document status types (pending, verified, rejected). Define GeoJSON types for PostGIS geometry data. Include proper typing for UUID fields, timestamps, and nullable columns.",
+            "status": "pending",
+            "testStrategy": "TypeScript compilation tests with strict mode enabled. Verify all interfaces match database schema exactly. Test discriminated union type narrowing works correctly."
+          },
+          {
+            "id": 2,
+            "title": "Implement Zod Validation Schemas",
+            "description": "Create comprehensive Zod validation schemas for all data types and API inputs",
+            "dependencies": [
+              1
+            ],
+            "details": "Create lib/validation/schemas.ts using Zod v3.22+. Define validation schemas for all database entities matching TypeScript interfaces. Create file upload validation schema with max 50MB size limit and allowed MIME types (application/pdf, application/msword, application/vnd.openxmlformats-officedocument). Include property number validation, email validation for user profiles, and GeoJSON validation for spatial data. Add custom refinements for business logic validation.",
+            "status": "pending",
+            "testStrategy": "Unit tests for each validation schema with valid and invalid inputs. Test file size and MIME type validation. Verify error messages are user-friendly and consistent."
+          },
+          {
+            "id": 3,
+            "title": "Create Custom Error Classes and Error Handling",
+            "description": "Implement custom error classes and centralized error handling system",
+            "dependencies": [],
+            "details": "Create lib/errors/index.ts with custom error classes: ValidationError, AuthorizationError, DocumentNotFoundError, UploadError, and DatabaseError. Each error class should extend base Error with additional properties like errorCode, statusCode, and context. Implement error serialization for API responses. Create error boundary components for React error handling. Add logging integration for error tracking.",
+            "status": "pending",
+            "testStrategy": "Unit tests for each error class instantiation and serialization. Test error boundary component catches and displays errors properly. Verify error logging works correctly."
+          },
+          {
+            "id": 4,
+            "title": "Build File Handling Utility Functions",
+            "description": "Create utility functions for file operations, sanitization, and validation",
+            "dependencies": [
+              2
+            ],
+            "details": "Create lib/utils/file.ts with functions for sanitizing file names (remove special characters, limit length), validating file extensions, generating secure file paths, and creating SHA-256 hashes for file verification. Include utilities for handling large file streaming, chunk processing for hash generation, and MIME type detection. Add functions for generating unique storage paths with UUID prefixes.",
+            "status": "pending",
+            "testStrategy": "Unit tests for file name sanitization with various input scenarios. Test hash generation consistency across multiple runs. Verify MIME type detection accuracy with different file types."
+          },
+          {
+            "id": 5,
+            "title": "Create Validation Module Integration and API Helpers",
+            "description": "Build the main validation module with API integration helpers and middleware",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "details": "Create lib/validation/index.ts as the main module export combining all validation functionality. Build validateRequest() helper for API route validation, validateFileUpload() for file processing, and validateUserPermissions() for authorization checks. Create Next.js middleware integration for request validation. Include utility functions for parsing and validating form data, query parameters, and request bodies with proper error handling and response formatting.",
+            "status": "pending",
+            "testStrategy": "Integration tests for API validation middleware. Test request validation with various payload types. Verify error responses are properly formatted and include validation details. Test performance with large validation schemas."
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Document Upload and Storage Service",
+        "description": "Implement secure document upload to Supabase Storage with metadata capture and storage path management",
+        "details": "Create upload API route using Next.js 16.* App Router server actions. Implement file upload to Supabase Storage bucket 'documents' with organized folder structure: /property-{id}/documents/{uuid}-{sanitized-filename}. Use @supabase/storage-js v2.6+ for file operations. Implement multipart upload for large files. Create ver_documents record with metadata (property_id, doc_number, uploader_id, storage_path). Add file type validation and virus scanning placeholder. Implement upload progress tracking using React hooks. Set up storage bucket policies for role-based access.",
+        "testStrategy": "Integration tests for file upload with various file types and sizes. Test upload progress tracking. Verify storage bucket permissions prevent unauthorized access. Test upload failure scenarios (network interruption, invalid files). Load test with concurrent uploads.",
+        "priority": "high",
+        "dependencies": [
+          1,
+          2,
+          3
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Supabase Storage Bucket and Policies",
+            "description": "Set up the 'documents' storage bucket in Supabase with proper folder structure and role-based access policies",
+            "dependencies": [],
+            "details": "Create Supabase Storage bucket named 'documents' with organized folder structure /property-{id}/documents/{uuid}-{sanitized-filename}. Configure bucket policies for role-based access control allowing staff/verifier/chief_registrar/admin roles appropriate permissions. Set up RLS policies to ensure users can only access documents they have permission for based on their role and property assignments.",
+            "status": "pending",
+            "testStrategy": "Test bucket creation and verify folder structure. Test access permissions for each role type. Verify unauthorized users cannot access restricted documents."
+          },
+          {
+            "id": 2,
+            "title": "Implement File Upload API Route with Server Actions",
+            "description": "Create Next.js 16.* App Router server action for secure document upload with validation and metadata capture",
+            "dependencies": [
+              1
+            ],
+            "details": "Create server action in app/actions/upload-document.ts using Next.js 16.* App Router. Implement file type validation (PDF, DOC, DOCX) and size limits (max 50MB). Add virus scanning placeholder integration. Capture file metadata including property_id, doc_number, uploader_id, and generate UUID for unique naming. Sanitize filenames and create storage path following the defined structure.",
+            "status": "pending",
+            "testStrategy": "Test file upload with various file types and sizes. Verify file validation rejects invalid files. Test metadata capture accuracy. Verify filename sanitization works correctly."
+          },
+          {
+            "id": 3,
+            "title": "Implement Multipart Upload with Progress Tracking",
+            "description": "Add support for large file uploads using Supabase Storage multipart upload with React hooks for progress tracking",
+            "dependencies": [
+              2
+            ],
+            "details": "Integrate @supabase/storage-js v2.6+ multipart upload functionality for files larger than 6MB. Create React hooks (useUploadProgress) to track upload progress and handle upload states (idle, uploading, success, error). Implement resumable uploads for network interruption recovery. Add upload cancellation functionality and cleanup of partial uploads.",
+            "status": "pending",
+            "testStrategy": "Test multipart upload with large files (>50MB). Verify progress tracking updates correctly. Test upload cancellation and cleanup. Test resumable upload after network interruption."
+          },
+          {
+            "id": 4,
+            "title": "Create Document Metadata Database Records",
+            "description": "Implement database operations to store document metadata in ver_documents table with proper relationships",
+            "dependencies": [
+              2
+            ],
+            "details": "Create database operations to insert records into ver_documents table with fields: property_id, doc_number, uploader_id, storage_path, file_size, mime_type, original_filename, upload_timestamp. Implement proper foreign key relationships and constraints. Add database triggers for automatic audit logging of document creation. Ensure atomic transactions for file upload and metadata storage.",
+            "status": "pending",
+            "testStrategy": "Test database record creation with valid metadata. Verify foreign key constraints work correctly. Test transaction rollback on upload failure. Verify audit triggers fire correctly."
+          },
+          {
+            "id": 5,
+            "title": "Implement SHA-256 Hashing and Hash Storage",
+            "description": "Add SHA-256 hash generation for uploaded documents and store hashes in ver_document_hashes table for verification",
+            "dependencies": [
+              4
+            ],
+            "details": "Implement SHA-256 hash generation for uploaded files using Node.js crypto module. Create ver_document_hashes table records linking to ver_documents with hash value, algorithm type, and creation timestamp. For large files, implement streaming hash calculation to handle memory efficiently. Store multiple hash versions if document is updated, maintaining hash history for audit purposes.",
+            "status": "pending",
+            "testStrategy": "Test hash generation for various file sizes. Verify hash consistency for identical files. Test streaming hash calculation for large files. Verify hash storage and retrieval accuracy."
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "SHA-256 Hashing Edge Function",
+        "description": "Create Supabase Edge Function to compute SHA-256 hashes of uploaded documents and persist hash records",
+        "details": "Create supabase/functions/hash-document Edge Function using Deno runtime. Implement streaming SHA-256 hash computation using Web Crypto API (crypto.subtle.digest). Handle large files by processing in chunks to avoid memory issues. Create ver_document_hashes record with computed hash and timestamp. Update ver_documents status to 'hashed'. Implement retry logic for transient failures. Add request validation for document_id parameter. Use Supabase client in Edge Function with service role key for database operations.",
+        "testStrategy": "Unit tests with known file content and expected SHA-256 hashes. Test with various file sizes including large scanned PDFs. Verify hash consistency across multiple computations of same file. Test error handling for corrupted files and storage access failures. Performance testing with 10MB+ files.",
+        "priority": "high",
+        "dependencies": [
+          4
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Edge Function Structure and Configuration",
+            "description": "Set up the basic Supabase Edge Function structure for hash-document with proper Deno runtime configuration and environment setup",
+            "dependencies": [],
+            "details": "Create supabase/functions/hash-document directory structure with index.ts entry point. Configure function.json with proper Deno runtime settings. Set up TypeScript configuration for Edge Function environment. Import required dependencies including Supabase client and Web Crypto API. Configure environment variables for service role key access.",
+            "status": "pending",
+            "testStrategy": "Verify function deploys successfully to local Supabase instance. Test basic function invocation returns proper response structure."
+          },
+          {
+            "id": 2,
+            "title": "Implement Request Validation and Document Retrieval",
+            "description": "Add comprehensive request validation for document_id parameter and implement secure document retrieval from Supabase Storage",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement request body validation to ensure document_id is provided and valid UUID format. Add authentication checks using service role key. Retrieve document metadata from ver_documents table to get storage path. Implement error handling for missing or inaccessible documents. Add logging for validation failures and security events.",
+            "status": "pending",
+            "testStrategy": "Test with valid and invalid document_id values. Verify proper error responses for missing documents. Test unauthorized access scenarios."
+          },
+          {
+            "id": 3,
+            "title": "Implement Streaming SHA-256 Hash Computation",
+            "description": "Create streaming hash computation using Web Crypto API with chunked processing for large files to avoid memory issues",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement streaming file reader that processes documents in configurable chunks (default 64KB). Use crypto.subtle.digest with SHA-256 algorithm for hash computation. Handle large scanned PDFs by processing incrementally without loading entire file into memory. Add progress tracking for long-running hash operations. Implement proper error handling for corrupted files or read failures.",
+            "status": "pending",
+            "testStrategy": "Test with various file sizes from small documents to 10MB+ scanned PDFs. Verify hash consistency across multiple computations. Test memory usage remains stable for large files."
+          },
+          {
+            "id": 4,
+            "title": "Implement Database Operations and Transaction Management",
+            "description": "Create database operations to persist hash records and update document status with proper transaction management",
+            "dependencies": [
+              3
+            ],
+            "details": "Create ver_document_hashes record with computed hash, document_id, algorithm (SHA-256), and timestamp. Update ver_documents table to set status to 'hashed' and hash_computed_at timestamp. Implement atomic transaction to ensure both operations succeed or fail together. Add proper error handling for database constraint violations. Use Supabase client with service role key for elevated permissions.",
+            "status": "pending",
+            "testStrategy": "Test successful hash storage and document status update. Verify transaction rollback on database errors. Test concurrent hash operations on same document."
+          },
+          {
+            "id": 5,
+            "title": "Add Retry Logic and Error Handling",
+            "description": "Implement comprehensive retry logic for transient failures and robust error handling with proper logging",
+            "dependencies": [
+              4
+            ],
+            "details": "Implement exponential backoff retry logic for transient database and storage failures. Add configurable retry attempts (default 3) with increasing delays. Implement comprehensive error handling for network timeouts, storage access failures, and database connection issues. Add structured logging for all operations including success, failures, and retry attempts. Create proper HTTP response codes and error messages for different failure scenarios.",
+            "status": "pending",
+            "testStrategy": "Test retry behavior with simulated transient failures. Verify proper error responses for permanent failures. Test logging output contains sufficient debugging information."
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Audit Logging System",
+        "description": "Implement comprehensive audit logging for all user actions with immutable log records",
+        "details": "Create lib/audit module with logging functions for all actions (upload, hash, verify, delete, export). Implement ver_logs table inserts with structured JSONB details column. Capture actor_id, action type, target information, IP address, and user agent. Create audit middleware for automatic logging of API calls. Implement log retention policies and archival strategies. Use database triggers for sensitive operations to ensure logging cannot be bypassed. Create audit log viewer for administrators with filtering and search capabilities.",
+        "testStrategy": "Verify all critical actions generate audit logs. Test log immutability (no updates/deletes allowed). Validate JSONB structure and searchability. Test audit log viewer with various filters. Performance test log insertion under high load.",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          3
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create ver_logs Database Table and Audit Schema",
+            "description": "Design and implement the ver_logs table with immutable audit log structure and JSONB details column",
+            "dependencies": [],
+            "details": "Create ver_logs table with columns: id (UUID primary key), actor_id (UUID foreign key to auth.users), action_type (enum: upload, hash, verify, delete, export, login, logout), target_type (varchar), target_id (UUID), ip_address (inet), user_agent (text), details (JSONB), created_at (timestamptz with default now()). Add database constraints to prevent updates/deletes. Create indexes on actor_id, action_type, created_at, and JSONB details for efficient querying. Implement database triggers to ensure immutability.",
+            "status": "pending",
+            "testStrategy": "Test table creation with proper constraints. Verify immutability by attempting updates/deletes. Test JSONB indexing and query performance. Validate foreign key constraints and enum values."
+          },
+          {
+            "id": 2,
+            "title": "Implement Core Audit Logging Library",
+            "description": "Create lib/audit module with TypeScript functions for logging all user actions with structured data",
+            "dependencies": [
+              1
+            ],
+            "details": "Create lib/audit/index.ts with functions: logUpload(), logHash(), logVerify(), logDelete(), logExport(), logAuth(). Each function accepts actor_id, target information, IP address, user agent, and action-specific details. Implement createAuditLog() base function that inserts into ver_logs table with proper JSONB structure. Add TypeScript interfaces for AuditLogEntry and action-specific detail types. Include error handling and validation for required fields.",
+            "status": "pending",
+            "testStrategy": "Unit tests for each logging function with valid and invalid inputs. Test JSONB structure consistency. Verify database insertions with proper data types. Test error handling for missing required fields."
+          },
+          {
+            "id": 3,
+            "title": "Create Audit Middleware for Automatic API Logging",
+            "description": "Implement Next.js middleware to automatically capture and log all API calls and user actions",
+            "dependencies": [
+              2
+            ],
+            "details": "Create middleware/audit.ts that intercepts all API routes and server actions. Extract user information from Supabase session, capture IP address from request headers, and log API calls with request/response metadata. Implement request/response wrapping to capture action outcomes. Add filtering to exclude health checks and non-sensitive endpoints. Integrate with existing auth middleware to ensure proper user context. Handle both successful and failed operations with appropriate detail levels.",
+            "status": "pending",
+            "testStrategy": "Integration tests for middleware execution on various API routes. Test user context extraction and IP address capture. Verify logging occurs for both successful and failed requests. Test performance impact of middleware on API response times."
+          },
+          {
+            "id": 4,
+            "title": "Implement Database Triggers for Sensitive Operations",
+            "description": "Create PostgreSQL triggers to ensure critical database operations are automatically logged and cannot bypass audit system",
+            "dependencies": [
+              1
+            ],
+            "details": "Create database triggers on ver_documents, ver_document_hashes, ver_verifications, and ver_properties tables for INSERT, UPDATE, DELETE operations. Implement trigger functions that automatically insert audit records for sensitive data changes. Use TG_OP to determine operation type and capture OLD/NEW record values in JSONB details. Ensure triggers execute with SECURITY DEFINER to prevent privilege escalation. Add trigger for user role changes in auth schema. Include error handling to prevent trigger failures from blocking operations.",
+            "status": "pending",
+            "testStrategy": "Test triggers fire correctly for all CRUD operations on sensitive tables. Verify audit logs contain proper before/after values. Test trigger performance impact on database operations. Validate triggers cannot be bypassed by direct database access."
+          },
+          {
+            "id": 5,
+            "title": "Build Audit Log Viewer and Retention Management",
+            "description": "Create administrator interface for viewing, filtering, and managing audit logs with retention policies",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Create pages/admin/audit-logs.tsx with data table using shadcn/ui components. Implement server-side filtering by date range, user, action type, and target. Add search functionality for JSONB details using PostgreSQL operators. Create audit log export to CSV/PDF formats. Implement log retention policies with configurable retention periods by action type. Add archival functionality to move old logs to separate archive table. Include pagination for large result sets and real-time log streaming for active monitoring.",
+            "status": "pending",
+            "testStrategy": "Test audit log viewer with various filter combinations and large datasets. Verify search functionality works correctly with JSONB queries. Test CSV/PDF export with different data volumes. Validate retention policies execute correctly and archive old logs. Test real-time log streaming performance."
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Document Verification Edge Function",
+        "description": "Create verification system to re-hash uploaded documents and compare against stored hashes with decision logging",
+        "details": "Create supabase/functions/verify-document Edge Function. Implement verification workflow: accept verification file upload, compute SHA-256 hash, compare with latest stored hash from ver_document_hashes. Create ver_verifications record with outcome (verified/rejected), reason, and verifier_id. Update document status based on verification result. Implement optional storage of verification files for audit purposes. Add support for batch verification. Include discrepancy detection metadata (file size differences, etc.). Ensure atomic operations for verification decisions.",
+        "testStrategy": "Test hash matching with identical files. Test mismatch detection with altered files. Verify verification records are created correctly. Test batch verification functionality. Validate atomic transaction behavior on verification decisions.",
+        "priority": "high",
+        "dependencies": [
+          5,
+          6
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Supabase Edge Function Structure",
+            "description": "Set up the basic Edge Function structure for document verification with proper TypeScript configuration and dependencies",
+            "dependencies": [],
+            "details": "Create supabase/functions/verify-document directory with index.ts file. Configure TypeScript with proper types for Supabase Edge Functions runtime. Import required dependencies including crypto for SHA-256 hashing, Supabase client for database operations, and storage client for file handling. Set up proper CORS headers and error handling middleware.",
+            "status": "pending",
+            "testStrategy": "Test Edge Function deployment and basic HTTP request handling. Verify TypeScript compilation and runtime environment setup."
+          },
+          {
+            "id": 2,
+            "title": "Implement File Upload and Hash Computation",
+            "description": "Create the core functionality to accept verification file uploads and compute SHA-256 hashes with streaming support for large files",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement multipart file upload handling in the Edge Function. Create streaming SHA-256 hash computation to handle large PDF files efficiently without memory overflow. Add file size validation and MIME type checking. Implement chunked processing for files larger than memory limits. Include progress tracking for large file processing.",
+            "status": "pending",
+            "testStrategy": "Test with various file sizes including large PDFs. Verify hash computation accuracy against known test files. Test memory usage with streaming approach."
+          },
+          {
+            "id": 3,
+            "title": "Implement Hash Comparison and Verification Logic",
+            "description": "Create the verification workflow that compares computed hashes against stored hashes from ver_document_hashes table",
+            "dependencies": [
+              2
+            ],
+            "details": "Query ver_document_hashes table to retrieve the latest stored hash for the document. Implement secure hash comparison using constant-time comparison to prevent timing attacks. Create verification decision logic with detailed reason codes for matches and mismatches. Include metadata collection for discrepancies such as file size differences, timestamp variations, and hash algorithm versions.",
+            "status": "pending",
+            "testStrategy": "Test hash matching with identical files and mismatch detection with altered files. Verify constant-time comparison implementation. Test edge cases with missing or multiple hash records."
+          },
+          {
+            "id": 4,
+            "title": "Create Verification Records and Audit Logging",
+            "description": "Implement atomic database operations to create ver_verifications records and update document status with comprehensive audit logging",
+            "dependencies": [
+              3
+            ],
+            "details": "Create ver_verifications record with outcome (verified/rejected), detailed reason, verifier_id, timestamp, and verification metadata. Update document status in ver_documents table based on verification result. Implement atomic transactions to ensure data consistency. Create immutable audit log entries in ver_logs table with complete verification context. Include optional storage of verification files for audit purposes with configurable retention policies.",
+            "status": "pending",
+            "testStrategy": "Test atomic transaction behavior with database rollback scenarios. Verify verification records are created correctly with all required fields. Test audit log immutability and completeness."
+          },
+          {
+            "id": 5,
+            "title": "Implement Batch Verification and Error Handling",
+            "description": "Add support for batch verification processing and comprehensive error handling with proper HTTP responses and logging",
+            "dependencies": [
+              4
+            ],
+            "details": "Implement batch verification endpoint that can process multiple documents in a single request. Add proper error handling for all failure scenarios including network issues, database errors, and file processing failures. Create detailed HTTP response codes and error messages. Implement rate limiting and request validation. Add comprehensive logging for debugging and monitoring. Include rollback mechanisms for partial batch failures.",
+            "status": "pending",
+            "testStrategy": "Test batch verification with multiple files including mixed success/failure scenarios. Verify error handling produces appropriate HTTP responses. Test rate limiting and concurrent request handling."
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Properties and GIS Integration",
+        "description": "Implement property registry with PostGIS spatial data and GeoJSON API for mapping functionality",
+        "details": "Create property management CRUD operations with PostGIS geometry support. Implement supabase/functions/gis-layers Edge Function to serve GeoJSON FeatureCollections. Support filtering by document status, date ranges, and spatial bounds. Create property search with spatial queries (ST_Contains, ST_Intersects). Implement geometry validation and coordinate system standardization (EPSG:4326). Add spatial indexing for performance. Create property import functionality for bulk data loading. Support common geometry formats (WKT, GeoJSON).",
+        "testStrategy": "Test PostGIS spatial queries and indexing performance. Validate GeoJSON output format compliance. Test spatial filtering with various geometry types. Verify coordinate system transformations. Load test with large property datasets.",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          6
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create PostGIS Property Database Schema",
+            "description": "Design and implement the property registry database schema with PostGIS spatial data support",
+            "dependencies": [],
+            "details": "Create ver_properties table with PostGIS geometry columns for property boundaries. Include fields for property_id, owner_name, address, geometry (POLYGON/MULTIPOLYGON), area, registration_date, status, and metadata JSONB. Set up spatial indexing using GIST indexes on geometry columns. Configure EPSG:4326 coordinate system as default. Add constraints for geometry validation and ensure all spatial data uses consistent coordinate reference system.",
+            "status": "pending",
+            "testStrategy": "Test geometry column creation and spatial indexing. Validate EPSG:4326 coordinate system setup. Test geometry constraints and validation rules."
+          },
+          {
+            "id": 2,
+            "title": "Implement Property CRUD Operations with Spatial Support",
+            "description": "Build comprehensive property management API with PostGIS spatial query capabilities",
+            "dependencies": [
+              1
+            ],
+            "details": "Create Next.js API routes for property CRUD operations using Supabase client. Implement spatial queries using PostGIS functions (ST_Contains, ST_Intersects, ST_Within). Add property search with spatial filtering by bounding box, point-in-polygon, and distance queries. Include geometry validation on create/update operations. Support WKT and GeoJSON input formats for geometry data. Add pagination and sorting for property listings.",
+            "status": "pending",
+            "testStrategy": "Test all CRUD operations with various geometry types. Validate spatial query performance with indexed queries. Test geometry format conversions between WKT and GeoJSON."
+          },
+          {
+            "id": 3,
+            "title": "Build GIS Layers Edge Function for GeoJSON API",
+            "description": "Create Supabase Edge Function to serve property data as GeoJSON FeatureCollections for mapping",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Implement supabase/functions/gis-layers Edge Function using Deno runtime. Convert PostGIS geometry data to GeoJSON format using ST_AsGeoJSON function. Support filtering by document status, date ranges, and spatial bounds via query parameters. Implement proper HTTP caching headers and CORS configuration. Add error handling for invalid spatial queries and malformed requests. Optimize queries with spatial indexing for performance.",
+            "status": "pending",
+            "testStrategy": "Test GeoJSON output format compliance with RFC 7946. Validate filtering parameters and spatial bounds queries. Load test with large property datasets and verify response times."
+          },
+          {
+            "id": 4,
+            "title": "Implement Property Bulk Import System",
+            "description": "Create bulk property data import functionality supporting multiple geometry formats",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Build property import API endpoint accepting CSV/JSON files with geometry data. Support multiple input formats: WKT, GeoJSON, and coordinate pairs. Implement data validation and geometry standardization to EPSG:4326. Add batch processing with transaction rollback on errors. Create import progress tracking and error reporting. Include duplicate detection based on geometry overlap or property identifiers. Add import history logging in ver_logs table.",
+            "status": "pending",
+            "testStrategy": "Test import with various file formats and geometry types. Validate error handling and transaction rollback. Test duplicate detection algorithms and performance with large datasets."
+          },
+          {
+            "id": 5,
+            "title": "Integrate GIS Mapping with Next.js Frontend",
+            "description": "Build interactive property mapping interface using Leaflet and GeoJSON data from Edge Function",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Implement Next.js pages with Leaflet map integration using react-leaflet library. Connect to gis-layers Edge Function for dynamic property layer loading. Add map controls for filtering by document status, date ranges, and spatial selection tools. Implement property popup displays with basic information and links to detailed views. Add drawing tools for spatial queries and property boundary editing. Include map layer toggles and base map selection (OpenStreetMap, satellite). Ensure responsive design for mobile devices.",
+            "status": "pending",
+            "testStrategy": "Test map rendering performance with large property datasets. Validate interactive features like filtering and spatial selection. Test responsive design across different screen sizes and devices."
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Role-Based Dashboard Implementation",
+        "description": "Create role-specific dashboards for staff, verifiers, chief registrar, and admin users with appropriate data access",
+        "details": "Implement Next.js App Router pages for each role dashboard. Staff dashboard: upload history, verification status, document queue. Verifier dashboard: assigned documents, verification tools, decision history. Chief registrar dashboard: organization-wide analytics, rejection causes analysis, GIS map integration. Admin dashboard: user management, system configuration, audit logs. Use React Server Components for data fetching. Implement real-time updates using Supabase realtime subscriptions. Create responsive design with Tailwind CSS and shadcn/ui components. Add data export functionality.",
+        "testStrategy": "Test role-based access restrictions on dashboard routes. Verify data filtering by user role. Test real-time updates functionality. Validate responsive design across devices. Performance test dashboard loading with large datasets.",
+        "priority": "medium",
+        "dependencies": [
+          2,
+          7,
+          8
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Staff Dashboard with Upload History and Document Queue",
+            "description": "Implement the staff role dashboard page with upload history, verification status tracking, and document queue management functionality.",
+            "dependencies": [],
+            "details": "Create app/dashboard/staff/page.tsx using Next.js App Router with React Server Components. Implement data fetching for user's uploaded documents from ver_documents table filtered by uploader_id. Display upload history with document status, verification progress, and timestamps. Create document queue showing pending documents awaiting verification. Add real-time updates using Supabase realtime subscriptions for status changes. Use shadcn/ui components for data tables and status indicators. Implement responsive design with Tailwind CSS for mobile and desktop views.",
+            "status": "pending",
+            "testStrategy": "Test staff role access restrictions. Verify data filtering shows only user's documents. Test real-time status updates. Validate responsive design on different screen sizes. Performance test with large document lists."
+          },
+          {
+            "id": 2,
+            "title": "Create Verifier Dashboard with Document Assignment and Verification Tools",
+            "description": "Build the verifier role dashboard with assigned documents, verification tools, and decision history tracking.",
+            "dependencies": [],
+            "details": "Create app/dashboard/verifier/page.tsx with React Server Components for data fetching. Query ver_documents table for documents assigned to current verifier. Implement verification tools interface with document preview, hash comparison results, and decision input forms. Create decision history section showing past verification decisions from ver_verifications table. Add real-time notifications for new document assignments using Supabase realtime. Integrate with verification Edge Function for processing decisions. Use shadcn/ui components for forms, modals, and data display.",
+            "status": "pending",
+            "testStrategy": "Test verifier role access and document assignment filtering. Verify integration with verification Edge Function. Test decision logging functionality. Validate real-time assignment notifications. Test document preview and verification tools."
+          },
+          {
+            "id": 3,
+            "title": "Create Chief Registrar Dashboard with Analytics and GIS Integration",
+            "description": "Implement the chief registrar dashboard featuring organization-wide analytics, rejection analysis, and GIS map integration with property data.",
+            "dependencies": [],
+            "details": "Create app/dashboard/chief-registrar/page.tsx with comprehensive analytics components. Implement organization-wide statistics from ver_documents, ver_verifications, and ver_properties tables. Create rejection causes analysis with charts showing verification failure patterns. Integrate GIS map using Leaflet and MapLibre with PostGIS data from ver_properties table. Display property locations as GeoJSON layers with verification status indicators. Add filtering and search capabilities for map data. Implement data export functionality for analytics reports in CSV/PDF formats using libraries like jsPDF and csv-writer.",
+            "status": "pending",
+            "testStrategy": "Test chief registrar role access to organization-wide data. Verify analytics calculations and chart rendering. Test GIS map integration with PostGIS data. Validate data export functionality for CSV/PDF formats. Performance test with large datasets and map rendering."
+          },
+          {
+            "id": 4,
+            "title": "Create Admin Dashboard with User Management and System Configuration",
+            "description": "Build the admin dashboard with comprehensive user management, system configuration, and audit log monitoring capabilities.",
+            "dependencies": [],
+            "details": "Create app/dashboard/admin/page.tsx with admin-specific functionality. Implement user management interface for creating, updating, and deactivating users across all roles (staff/verifier/chief_registrar/admin). Create system configuration panel for managing application settings, document retention policies, and verification parameters. Build audit log viewer displaying immutable audit trail from ver_logs table with filtering and search capabilities. Add user activity monitoring and system health metrics. Implement bulk user operations and role assignment functionality. Use shadcn/ui components for complex forms and data tables.",
+            "status": "pending",
+            "testStrategy": "Test admin role access restrictions and elevated permissions. Verify user management operations (create, update, delete). Test system configuration changes and their effects. Validate audit log display and filtering. Test bulk operations and role assignments."
+          },
+          {
+            "id": 5,
+            "title": "Implement Dashboard Layout and Real-time Updates Infrastructure",
+            "description": "Create shared dashboard layout component and implement real-time update infrastructure using Supabase realtime subscriptions across all role dashboards.",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "details": "Create app/dashboard/layout.tsx with shared navigation, role-based menu items, and responsive sidebar. Implement real-time subscription service using Supabase realtime for document status changes, new assignments, and system notifications. Create custom hooks (useRealtimeDocuments, useRealtimeNotifications) for managing subscriptions across dashboard components. Add notification system with toast messages for real-time updates. Implement loading states and error boundaries for all dashboard pages. Create shared components for common dashboard elements like status badges, progress indicators, and data export buttons. Ensure proper cleanup of subscriptions on component unmount.",
+            "status": "pending",
+            "testStrategy": "Test shared layout rendering across all role dashboards. Verify real-time subscriptions work correctly and clean up properly. Test notification system with various update types. Validate loading states and error handling. Test dashboard navigation and role-based menu visibility."
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Reporting and Export System",
+        "description": "Implement comprehensive reporting system with CSV/PDF exports and analytics for compliance and operational oversight",
+        "details": "Create supabase/functions/reports Edge Function for generating exports. Implement CSV export using Papa Parse library for audit logs, verification reports, and property listings. Create PDF reports using jsPDF or Puppeteer for executive summaries and compliance reports. Add report scheduling and email delivery. Implement data aggregation queries for analytics (verification rates, rejection causes, geographic trends). Create report templates with customizable filters and date ranges. Add report caching for performance. Support large dataset exports with streaming.",
+        "testStrategy": "Test CSV and PDF generation with various data sizes. Verify report accuracy against source data. Test export performance with large datasets. Validate email delivery functionality. Test report caching and invalidation logic.",
+        "priority": "medium",
+        "dependencies": [
+          6,
+          7,
+          8,
+          9
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Supabase Edge Function for Report Generation",
+            "description": "Implement the core supabase/functions/reports Edge Function to handle report generation requests with role-based access control",
+            "dependencies": [],
+            "details": "Create supabase/functions/reports/index.ts Edge Function with TypeScript. Implement JWT token validation and role-based access control (staff/verifier/chief_registrar/admin). Add request routing for different report types (audit logs, verification reports, property listings). Implement error handling and response formatting. Add CORS configuration for Next.js frontend integration. Include request logging and performance monitoring.",
+            "status": "pending",
+            "testStrategy": "Test JWT validation with different role tokens. Verify CORS functionality. Test error handling with invalid requests. Performance test with concurrent requests."
+          },
+          {
+            "id": 2,
+            "title": "Implement CSV Export Functionality with Papa Parse",
+            "description": "Build CSV export capabilities for audit logs, verification reports, and property listings using Papa Parse library",
+            "dependencies": [
+              1
+            ],
+            "details": "Install and configure Papa Parse library in the Edge Function. Create CSV formatters for ver_logs, ver_documents, and ver_properties tables. Implement streaming CSV generation for large datasets to handle memory constraints. Add customizable column selection and filtering by date ranges, status, and user roles. Support UTF-8 encoding and proper escaping of special characters. Implement data sanitization to prevent CSV injection attacks.",
+            "status": "pending",
+            "testStrategy": "Test CSV generation with various data sizes (1K, 10K, 100K+ records). Verify UTF-8 encoding and special character handling. Test streaming performance and memory usage. Validate CSV format compliance."
+          },
+          {
+            "id": 3,
+            "title": "Implement PDF Report Generation with jsPDF/Puppeteer",
+            "description": "Create PDF report generation for executive summaries and compliance reports with professional formatting",
+            "dependencies": [
+              1
+            ],
+            "details": "Evaluate and implement either jsPDF for client-side generation or Puppeteer for server-side HTML-to-PDF conversion. Create PDF templates for executive summaries, compliance reports, and verification statistics. Implement charts and graphs using Chart.js or similar library. Add company branding, headers, footers, and page numbering. Support multi-page reports with proper pagination. Include data aggregation queries for analytics (verification rates, rejection causes, geographic trends).",
+            "status": "pending",
+            "testStrategy": "Test PDF generation with various report sizes. Verify formatting consistency across different data volumes. Test chart rendering and image quality. Validate PDF accessibility compliance."
+          },
+          {
+            "id": 4,
+            "title": "Build Report Scheduling and Email Delivery System",
+            "description": "Implement automated report scheduling with email delivery functionality for regular compliance reporting",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Create ver_report_schedules table to store scheduled report configurations (optional extension beyond the base PRD). Implement cron-based scheduling using Supabase Edge Functions with pg_cron extension. Add email delivery using Supabase Auth SMTP or third-party service like SendGrid. Create email templates for report delivery with attachment support. Implement retry logic for failed deliveries. Add user preferences for report frequency (daily, weekly, monthly). Include unsubscribe functionality and delivery status tracking.",
+            "status": "pending",
+            "testStrategy": "Test scheduled report generation at different intervals. Verify email delivery with various attachment sizes. Test retry logic for failed deliveries. Validate email template rendering across different clients."
+          },
+          {
+            "id": 5,
+            "title": "Implement Report Caching and Performance Optimization",
+            "description": "Add report caching system and performance optimizations for handling large datasets and frequent report requests",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Implement Redis-compatible caching using Supabase or external cache service. Create cache keys based on report parameters (type, filters, date range). Add cache invalidation logic when underlying data changes. Implement database query optimization with proper indexing on ver_* tables. Add pagination support for large report datasets. Create background job processing for heavy report generation. Implement progress tracking for long-running reports. Add compression for cached reports to reduce storage.",
+            "status": "pending",
+            "testStrategy": "Performance test report generation with large datasets (1M+ records). Test cache hit/miss ratios and invalidation logic. Verify memory usage during heavy report processing. Test concurrent report generation scenarios."
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "created": "2026-01-21T15:19:07.262Z",
+      "updated": "2026-01-21T15:19:07.263Z",
+      "description": "Tasks for master context"
+    }
+  }
+}
