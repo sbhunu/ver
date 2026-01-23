@@ -7,8 +7,8 @@
  */
 
 import React from 'react'
-import ErrorBoundary from '@/components/errors/ErrorBoundary'
-import ErrorDisplay from '@/components/errors/ErrorDisplay'
+import { ErrorBoundary } from '@/components/errors/ErrorBoundary'
+import { ErrorDisplay } from '@/components/errors/ErrorDisplay'
 
 export interface DashboardErrorBoundaryProps {
   children: React.ReactNode

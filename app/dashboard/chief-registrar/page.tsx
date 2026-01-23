@@ -25,10 +25,17 @@ export default async function ChiefRegistrarDashboardPage() {
   ])
 
   // Prepare data for documents trend chart
-  const trendData = documentsOverTime.map((item) => ({
-    date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    count: item.count,
-  }))
+  // Use consistent date formatting to avoid hydration mismatches
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const trendData = documentsOverTime.map((item) => {
+    const date = new Date(item.date)
+    const month = monthNames[date.getMonth()]
+    const day = date.getDate()
+    return {
+      date: `${month} ${day}`,
+      count: item.count,
+    }
+  })
 
   return (
     <div className="chief-registrar-dashboard min-h-screen bg-gray-50">

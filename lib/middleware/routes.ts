@@ -43,7 +43,7 @@ export const AUTHENTICATED_ROUTES = [
 export const ROLE_ROUTES: Record<string, UserRoleType[]> = {
   '/dashboard/staff': ['staff', 'verifier', 'chief_registrar', 'admin'],
   '/dashboard/verifier': ['verifier', 'chief_registrar', 'admin'],
-  '/dashboard/registrar': ['chief_registrar', 'admin'],
+  '/dashboard/chief-registrar': ['chief_registrar', 'admin'],
   '/dashboard/admin': ['admin'],
   '/admin': ['admin'],
   '/verifier': ['verifier', 'chief_registrar', 'admin'],
@@ -56,7 +56,7 @@ export const ROLE_ROUTES: Record<string, UserRoleType[]> = {
 export const ROLE_DASHBOARDS: Record<UserRoleType, string> = {
   staff: '/dashboard/staff',
   verifier: '/dashboard/verifier',
-  chief_registrar: '/dashboard/registrar',
+  chief_registrar: '/dashboard/chief-registrar',
   admin: '/dashboard/admin',
 } as const
 

@@ -51,10 +51,46 @@ const menuItems: MenuItem[] = [
     icon: '⚙️',
   },
   {
+    label: 'Documents',
+    href: '/documents',
+    roles: ['staff', 'verifier', 'chief_registrar', 'admin'],
+    icon: '📄',
+  },
+  {
+    label: 'Upload Document',
+    href: '/upload',
+    roles: ['staff', 'verifier'],
+    icon: '📤',
+  },
+  {
+    label: 'Properties',
+    href: '/properties',
+    roles: ['staff', 'verifier', 'chief_registrar', 'admin'],
+    icon: '🏢',
+  },
+  {
+    label: 'Property Import',
+    href: '/properties/import',
+    roles: ['admin', 'chief_registrar'],
+    icon: '📥',
+  },
+  {
     label: 'Map',
     href: '/map',
     roles: ['staff', 'verifier', 'chief_registrar', 'admin'],
     icon: '🗺️',
+  },
+  {
+    label: 'Reports',
+    href: '/reports',
+    roles: ['chief_registrar', 'admin'],
+    icon: '📈',
+  },
+  {
+    label: 'Report Schedules',
+    href: '/reports/schedules',
+    roles: ['admin'],
+    icon: '⏰',
   },
   {
     label: 'Audit Logs',
