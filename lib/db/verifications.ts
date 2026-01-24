@@ -31,8 +31,8 @@ export async function getVerificationsByVerifier(verifierId: string): Promise<Ve
 }
 
 /**
- * Get verification by document ID
- * 
+ * Get verification by document ID (latest only)
+ *
  * @param documentId - Document ID
  * @returns Verification record or null
  */
@@ -52,6 +52,30 @@ export async function getVerificationByDocument(documentId: string): Promise<Ver
   }
 
   return verification as Verification
+}
+
+/**
+ * Get all verifications for a document (verification history)
+ *
+ * @param documentId - Document ID
+ * @returns Array of verification records, newest first
+ */
+export async function getVerificationsByDocument(
+  documentId: string
+): Promise<Verification[]> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('ver_verifications')
+    .select('*')
+    .eq('document_id', documentId)
+    .order('created_at', { ascending: false })
+
+  if (error || !data) {
+    return []
+  }
+
+  return data as Verification[]
 }
 
 /**

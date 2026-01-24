@@ -18,86 +18,71 @@ interface DashboardLayoutProps {
   children: React.ReactNode
 }
 
-interface MenuItem {
+const ALL_ROLES: UserRoleType[] = ['staff', 'verifier', 'chief_registrar', 'admin']
+
+interface MenuLink {
+  type: 'link'
   label: string
   href: string
   roles: UserRoleType[]
   icon?: string
 }
 
-const menuItems: MenuItem[] = [
+interface MenuSubItem {
+  label: string
+  href: string
+  roles: UserRoleType[]
+}
+
+interface MenuGroup {
+  type: 'group'
+  label: string
+  icon?: string
+  /** Parent visible to these roles; children have their own roles. */
+  roles: UserRoleType[]
+  children: MenuSubItem[]
+}
+
+type MenuEntry = MenuLink | MenuGroup
+
+const menuEntries: MenuEntry[] = [
+  { type: 'link', label: 'Staff Dashboard', href: '/dashboard/staff', roles: ['staff'], icon: '📄' },
+  { type: 'link', label: 'Verifier Dashboard', href: '/dashboard/verifier', roles: ['verifier'], icon: '✅' },
+  { type: 'link', label: 'Verify', href: '/verify', roles: ['verifier', 'chief_registrar', 'admin'], icon: '🔍' },
+  { type: 'link', label: 'Chief Registrar Dashboard', href: '/dashboard/chief-registrar', roles: ['chief_registrar'], icon: '📊' },
+  { type: 'link', label: 'Admin Dashboard', href: '/dashboard/admin', roles: ['admin'], icon: '⚙️' },
   {
-    label: 'Staff Dashboard',
-    href: '/dashboard/staff',
-    roles: ['staff'],
-    icon: '📄',
-  },
-  {
-    label: 'Verifier Dashboard',
-    href: '/dashboard/verifier',
-    roles: ['verifier'],
-    icon: '✅',
-  },
-  {
-    label: 'Chief Registrar Dashboard',
-    href: '/dashboard/chief-registrar',
-    roles: ['chief_registrar'],
-    icon: '📊',
-  },
-  {
-    label: 'Admin Dashboard',
-    href: '/dashboard/admin',
-    roles: ['admin'],
-    icon: '⚙️',
-  },
-  {
+    type: 'group',
     label: 'Documents',
-    href: '/documents',
-    roles: ['staff', 'verifier', 'chief_registrar', 'admin'],
     icon: '📄',
+    roles: ALL_ROLES,
+    children: [
+      { label: 'List', href: '/documents', roles: ALL_ROLES },
+      { label: 'Upload', href: '/upload', roles: ['staff', 'verifier'] },
+    ],
   },
   {
-    label: 'Upload Document',
-    href: '/upload',
-    roles: ['staff', 'verifier'],
-    icon: '📤',
-  },
-  {
+    type: 'group',
     label: 'Properties',
-    href: '/properties',
-    roles: ['staff', 'verifier', 'chief_registrar', 'admin'],
     icon: '🏢',
+    roles: ALL_ROLES,
+    children: [
+      { label: 'List', href: '/properties', roles: ALL_ROLES },
+      { label: 'Import', href: '/properties/import', roles: ['admin', 'chief_registrar'] },
+    ],
   },
+  { type: 'link', label: 'Map', href: '/map', roles: ALL_ROLES, icon: '🗺️' },
   {
-    label: 'Property Import',
-    href: '/properties/import',
-    roles: ['admin', 'chief_registrar'],
-    icon: '📥',
-  },
-  {
-    label: 'Map',
-    href: '/map',
-    roles: ['staff', 'verifier', 'chief_registrar', 'admin'],
-    icon: '🗺️',
-  },
-  {
+    type: 'group',
     label: 'Reports',
-    href: '/reports',
-    roles: ['chief_registrar', 'admin'],
     icon: '📈',
-  },
-  {
-    label: 'Report Schedules',
-    href: '/reports/schedules',
-    roles: ['admin'],
-    icon: '⏰',
-  },
-  {
-    label: 'Audit Logs',
-    href: '/admin/audit-logs',
     roles: ['chief_registrar', 'admin'],
-    icon: '📋',
+    children: [
+      { label: 'Builder', href: '/reports', roles: ['chief_registrar', 'admin'] },
+      { label: 'Schedules', href: '/reports/schedules', roles: ['admin'] },
+    ],
   },
+  { type: 'link', label: 'Audit Logs', href: '/admin/audit-logs', roles: ['chief_registrar', 'admin'], icon: '📋' },
 ]
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
@@ -139,11 +124,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     fetchUser()
   }, [supabase])
 
-  // Filter menu items based on user role
-  const visibleMenuItems = menuItems.filter((item) => {
-    if (!user) return false
-    return item.roles.includes(user.role)
-  })
+  const hasRole = (roles: UserRoleType[]) => user != null && roles.includes(user.role)
+
+  const visibleSubItems = (children: MenuSubItem[]) =>
+    children.filter((c) => hasRole(c.roles))
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -190,22 +174,60 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             {/* Navigation */}
             <nav className="flex-1 px-4 py-4 overflow-y-auto">
               <ul className="space-y-1">
-                {visibleMenuItems.map((item) => {
-                  const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
+                {menuEntries.map((entry, idx) => {
+                  if (entry.type === 'link') {
+                    if (!hasRole(entry.roles)) return null
+                    const isActive = pathname === entry.href || pathname?.startsWith(entry.href + '/')
+                    return (
+                      <li key={entry.href}>
+                        <Link
+                          href={entry.href}
+                          className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                            isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                          onClick={() => setSidebarOpen(false)}
+                        >
+                          {entry.icon && <span className="mr-3">{entry.icon}</span>}
+                          {entry.label}
+                        </Link>
+                      </li>
+                    )
+                  }
+                  const group = entry
+                  if (!hasRole(group.roles)) return null
+                  const subs = visibleSubItems(group.children)
+                  if (subs.length === 0) return null
+                  const matchingSub = subs.filter(
+                    (s) => pathname === s.href || pathname?.startsWith(s.href + '/')
+                  )
+                  const activeSubHref =
+                    matchingSub.length > 0
+                      ? matchingSub.reduce((a, b) => (a.href.length >= b.href.length ? a : b)).href
+                      : null
                   return (
-                    <li key={item.href}>
-                      <Link
-                        href={item.href}
-                        className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                          isActive
-                            ? 'bg-blue-50 text-blue-700'
-                            : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                        onClick={() => setSidebarOpen(false)}
-                      >
-                        {item.icon && <span className="mr-3">{item.icon}</span>}
-                        {item.label}
-                      </Link>
+                    <li key={`group-${idx}-${group.label}`}>
+                      <div className="flex items-center px-4 py-2 text-sm font-medium text-gray-500 uppercase tracking-wider">
+                        {group.icon && <span className="mr-3">{group.icon}</span>}
+                        {group.label}
+                      </div>
+                      <ul className="mt-1 ml-4 space-y-0.5 border-l border-gray-200 pl-3">
+                        {subs.map((sub) => {
+                          const isActive = sub.href === activeSubHref
+                          return (
+                            <li key={sub.href}>
+                              <Link
+                                href={sub.href}
+                                className={`block py-1.5 pl-1 text-sm transition-colors ${
+                                  isActive ? 'text-blue-600 font-medium' : 'text-gray-600 hover:text-gray-900'
+                                }`}
+                                onClick={() => setSidebarOpen(false)}
+                              >
+                                {sub.label}
+                              </Link>
+                            </li>
+                          )
+                        })}
+                      </ul>
                     </li>
                   )
                 })}

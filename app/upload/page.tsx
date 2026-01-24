@@ -1,67 +1,117 @@
 /**
  * Document Upload Page
- * 
- * Page for uploading property deed documents with progress tracking
+ *
+ * Page for uploading property deed documents with progress tracking.
+ * Task Reference: 4.2, 4.3
  */
 
 'use client'
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { uploadDocument } from '@/app/actions/upload-document'
 import { useUploadProgress } from '@/lib/hooks/useUploadProgress'
 import { createClient } from '@/lib/supabase/client'
-import UploadProgress from '@/components/upload/UploadProgress'
-import Link from 'next/link'
+import { UploadProgress } from '@/components/upload'
+import { MAX_FILE_SIZE, ALLOWED_MIME_TYPES } from '@/lib/validation/schemas'
 
 interface Property {
   id: string
-  property_number: string
+  property_no: string
   owner_name: string | null
+}
+
+const ALLOWED_EXTENSIONS = ['.pdf', '.doc', '.docx']
+const MAX_SIZE_MB = MAX_FILE_SIZE / (1024 * 1024)
+
+function validateFile(file: File): string | null {
+  if (file.size > MAX_FILE_SIZE) {
+    return `File size must not exceed ${MAX_SIZE_MB}MB. Current: ${(file.size / 1024 / 1024).toFixed(2)}MB`
+  }
+  if (!ALLOWED_MIME_TYPES.includes(file.type as (typeof ALLOWED_MIME_TYPES)[number])) {
+    return `Invalid file type. Allowed: PDF, DOC, DOCX`
+  }
+  const ext = '.' + (file.name.split('.').pop()?.toLowerCase() ?? '')
+  if (!ALLOWED_EXTENSIONS.includes(ext)) {
+    return `Invalid file extension. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}`
+  }
+  return null
+}
+
+const ROLE_DASHBOARDS: Record<string, string> = {
+  staff: '/dashboard/staff',
+  verifier: '/dashboard/verifier',
+  chief_registrar: '/dashboard/chief-registrar',
+  admin: '/dashboard/admin',
 }
 
 export default function UploadPage() {
   const [properties, setProperties] = useState<Property[]>([])
+  const [dashboardHref, setDashboardHref] = useState('/dashboard/staff')
   const [selectedPropertyId, setSelectedPropertyId] = useState('')
   const [docNumber, setDocNumber] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
   const { progress, reset } = useUploadProgress()
 
   useEffect(() => {
-    // Fetch properties for dropdown
-    const fetchProperties = async () => {
+    const supabase = createClient()
+    const load = async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (user) {
+          const { data: profile } = await supabase
+            .from('ver_profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single()
+          const role = profile?.role as string | undefined
+          if (role && role in ROLE_DASHBOARDS) {
+            setDashboardHref(ROLE_DASHBOARDS[role])
+          }
+        }
+      } catch {
+        /* ignore */
+      }
       try {
         const { data, error: fetchError } = await supabase
           .from('ver_properties')
-          .select('id, property_number, owner_name')
-          .order('property_number', { ascending: true })
+          .select('id, property_no, owner_name')
+          .order('property_no', { ascending: true })
           .limit(100)
-
-        if (fetchError) {
-          console.error('Error fetching properties:', fetchError)
-          return
-        }
-
-        setProperties(data || [])
-      } catch (err) {
-        console.error('Error fetching properties:', err)
+        if (!fetchError) setProperties(data || [])
+      } catch {
+        /* ignore */
       }
     }
-
-    fetchProperties()
-  }, [supabase])
+    load()
+  }, [])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
-    if (selectedFile) {
-      setFile(selectedFile)
+    const input = e.target
+    if (!selectedFile) {
+      setFile(null)
       setError(null)
-      setSuccess(false)
+      return
     }
+    const validationError = validateFile(selectedFile)
+    if (validationError) {
+      setError(validationError)
+      setFile(null)
+      setSuccess(false)
+      if (input) input.value = ''
+      return
+    }
+    setFile(selectedFile)
+    setError(null)
+    setSuccess(false)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -73,17 +123,21 @@ export default function UploadPage() {
       setError('Please select a file')
       return
     }
-
+    const fileError = validateFile(file)
+    if (fileError) {
+      setError(fileError)
+      return
+    }
     if (!selectedPropertyId) {
       setError('Please select a property')
       return
     }
-
     if (!docNumber.trim()) {
       setError('Please enter a document number')
       return
     }
 
+    setIsSubmitting(true)
     try {
       const formData = new FormData()
       formData.append('file', file)
@@ -98,28 +152,34 @@ export default function UploadPage() {
         setDocNumber('')
         setSelectedPropertyId('')
         reset()
-        
-        // Reset file input
-        const fileInput = document.getElementById('file-input') as HTMLInputElement
-        if (fileInput) {
-          fileInput.value = ''
-        }
 
-        // Redirect to documents list after 2 seconds
-        setTimeout(() => {
-          router.push('/documents')
-        }, 2000)
+        const fileInput = document.getElementById('file-input') as HTMLInputElement
+        if (fileInput) fileInput.value = ''
+
+        setTimeout(() => router.push('/documents'), 2000)
       } else {
         setError(result.error || 'Upload failed')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred')
+    } finally {
+      setIsSubmitting(false)
     }
   }
+
+  const showProgress = progress.state !== 'idle' || isSubmitting
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <div className="mb-4">
+          <Link
+            href={dashboardHref}
+            className="text-sm font-medium text-blue-600 hover:text-blue-500"
+          >
+            ← Back to Dashboard
+          </Link>
+        </div>
         <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Upload Document</h1>
@@ -140,11 +200,12 @@ export default function UploadPage() {
                 onChange={(e) => setSelectedPropertyId(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 required
+                disabled={isSubmitting}
               >
                 <option value="">Select a property...</option>
                 {properties.map((property) => (
                   <option key={property.id} value={property.id}>
-                    {property.property_number} {property.owner_name ? `- ${property.owner_name}` : ''}
+                    {property.property_no} {property.owner_name ? `– ${property.owner_name}` : ''}
                   </option>
                 ))}
               </select>
@@ -160,9 +221,10 @@ export default function UploadPage() {
                 id="docNumber"
                 value={docNumber}
                 onChange={(e) => setDocNumber(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 placeholder="Enter document number"
                 required
+                disabled={isSubmitting}
               />
             </div>
 
@@ -190,7 +252,7 @@ export default function UploadPage() {
                   <div className="flex text-sm text-gray-600">
                     <label
                       htmlFor="file-input"
-                      className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
+                      className={`relative rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500 ${isSubmitting ? 'cursor-not-allowed opacity-60' : 'cursor-pointer bg-white'}`}
                     >
                       <span>Upload a file</span>
                       <input
@@ -201,11 +263,12 @@ export default function UploadPage() {
                         className="sr-only"
                         onChange={handleFileChange}
                         required
+                        disabled={isSubmitting}
                       />
                     </label>
                     <p className="pl-1">or drag and drop</p>
                   </div>
-                  <p className="text-xs text-gray-500">PDF, DOC, DOCX up to 50MB</p>
+                  <p className="text-xs text-gray-500">PDF, DOC, DOCX up to {MAX_SIZE_MB}MB</p>
                   {file && (
                     <p className="text-sm text-gray-900 mt-2">
                       Selected: <span className="font-medium">{file.name}</span> (
@@ -217,9 +280,21 @@ export default function UploadPage() {
             </div>
 
             {/* Upload Progress */}
-            {progress.state !== 'idle' && (
+            {showProgress && (
               <div className="mt-4">
-                <UploadProgress progress={progress} />
+                {progress.state !== 'idle' ? (
+                  <UploadProgress progress={progress} />
+                ) : (
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"
+                        aria-hidden
+                      />
+                      <span className="text-sm font-medium text-blue-800">Uploading…</span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -248,19 +323,19 @@ export default function UploadPage() {
             )}
 
             {/* Submit Button */}
-            <div className="flex justify-end space-x-4">
+            <div className="flex justify-end gap-4">
               <Link
                 href="/documents"
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:pointer-events-none disabled:opacity-50"
               >
                 Cancel
               </Link>
               <button
                 type="submit"
-                disabled={progress.state === 'uploading' || success}
+                disabled={progress.state === 'uploading' || success || isSubmitting}
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {progress.state === 'uploading' ? 'Uploading...' : 'Upload Document'}
+                {progress.state === 'uploading' || isSubmitting ? 'Uploading…' : 'Upload Document'}
               </button>
             </div>
           </form>

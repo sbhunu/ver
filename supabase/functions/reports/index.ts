@@ -320,9 +320,9 @@ async function getPropertyListings(
     query = query.eq('status', filters.status)
   }
 
-  // Apply property number filter
+  // Apply property number filter (schema uses property_no)
   if (filters.propertyNumber) {
-    query = query.eq('property_number', filters.propertyNumber)
+    query = query.eq('property_no', filters.propertyNumber)
   }
 
   // Pagination
@@ -846,7 +846,8 @@ function formatVerificationReportsForCSV(data: unknown[]): { columns: string[]; 
 function formatPropertyListingsForCSV(data: unknown[]): { columns: string[]; rows: string[] } {
   const columns = [
     'id',
-    'property_number',
+    'property_no',
+    'address',
     'owner_name',
     'area',
     'registration_date',
@@ -1001,37 +1002,28 @@ async function handleReportRequest(request: Request): Promise<Response> {
     const customColumns = columnsParam ? columnsParam.split(',').map((c) => c.trim()) : undefined
 
     // Fetch report data based on type
-    let reportData: unknown[] = []
+    type ReportResult = { data: unknown[]; total: number; page: number; pageSize: number; totalPages: number }
+    let reportResult: ReportResult
 
     switch (reportType) {
       case 'audit-logs':
-        reportData = await getAuditLogsReport(user.userId, user.role, filters)
+        reportResult = await getAuditLogsReport(user.userId, user.role, filters)
         break
       case 'verification-reports':
-        reportData = await getVerificationReports(user.userId, user.role, filters)
+        reportResult = await getVerificationReports(user.userId, user.role, filters)
         break
       case 'property-listings':
-        reportData = await getPropertyListings(user.userId, user.role, filters)
+        reportResult = await getPropertyListings(user.userId, user.role, filters)
         break
     }
+
+    const reportData = reportResult.data
 
     // Log performance
     const duration = performance.now() - startTime
     console.log(
       `Report generated: type=${reportType}, format=${format}, records=${reportData.length}, total=${reportResult.total}, page=${reportResult.page}/${reportResult.totalPages}, duration=${duration.toFixed(2)}ms, user=${user.email}`
     )
-
-    // Cache the report if enabled and not paginated (full report)
-    if (useCache && page === 1 && reportResult.totalPages === 1) {
-      try {
-        // Cache would be stored here
-        // In production, call setCachedReport()
-        console.log('Report cached (would be implemented)')
-      } catch (cacheError) {
-        console.warn('Failed to cache report:', cacheError)
-        // Continue without caching
-      }
-    }
 
     // Return data based on format
     if (format === 'json') {

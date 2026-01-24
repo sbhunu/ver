@@ -1,16 +1,27 @@
 /**
  * VER System Landing Page
- * 
+ *
  * Landing page for the Records Encryption & Verification (VER) system
- * for property deeds management and verification
+ * for property deeds management and verification.
+ * Task 11: Role-aware dashboard link, property map (public), appropriate links for authenticated users.
  */
 
 import Link from 'next/link'
 import { getAuthenticatedUser } from '@/lib/auth/session'
+import type { UserRoleType } from '@/lib/auth/types'
+
+const ROLE_DASHBOARDS: Record<UserRoleType, string> = {
+  staff: '/dashboard/staff',
+  verifier: '/dashboard/verifier',
+  chief_registrar: '/dashboard/chief-registrar',
+  admin: '/dashboard/admin',
+}
 
 export default async function Home() {
-  // Check if user is already authenticated
   const user = await getAuthenticatedUser()
+  const dashboardHref = user?.profile?.role
+    ? ROLE_DASHBOARDS[user.profile.role] ?? '/dashboard/staff'
+    : '/dashboard/staff'
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
@@ -19,16 +30,29 @@ export default async function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-blue-600">VER</h1>
-              <span className="ml-2 text-sm text-gray-600">Records Encryption & Verification</span>
+              <Link href="/" className="text-2xl font-bold text-blue-600 hover:text-blue-700">
+                VER
+              </Link>
+              <span className="ml-2 text-sm text-gray-600 hidden sm:inline">
+                Records Encryption & Verification
+              </span>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              {/* Property Map: public access for everyone */}
+              <Link
+                href="/map"
+                className="px-3 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors text-sm font-medium"
+              >
+                Property Map
+              </Link>
               {user ? (
                 <>
-                  <span className="text-sm text-gray-600">Welcome, {user.email}</span>
+                  <span className="text-sm text-gray-600 truncate max-w-[140px] sm:max-w-none">
+                    Welcome, {user.email}
+                  </span>
                   <Link
-                    href="/dashboard/staff"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    href={dashboardHref}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                   >
                     Go to Dashboard
                   </Link>
@@ -37,13 +61,13 @@ export default async function Home() {
                 <>
                   <Link
                     href="/login"
-                    className="px-4 py-2 text-gray-700 hover:text-gray-900 transition-colors"
+                    className="px-3 py-2 text-gray-700 hover:text-gray-900 transition-colors text-sm font-medium"
                   >
                     Sign In
                   </Link>
                   <Link
                     href="/login"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                   >
                     Get Started
                   </Link>
@@ -67,22 +91,39 @@ export default async function Home() {
             tamper detection, and comprehensive audit trails. Built for staff, verifiers,
             and registrars to ensure document integrity and legal compliance.
           </p>
-          {!user && (
-            <div className="flex gap-4 justify-center">
-              <Link
-                href="/login"
-                className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold text-lg"
-              >
-                Sign In to Dashboard
-              </Link>
-              <Link
-                href="/map"
-                className="px-8 py-3 bg-white text-blue-600 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-semibold text-lg"
-              >
-                View Property Map
-              </Link>
-            </div>
-          )}
+          <div className="flex flex-wrap gap-4 justify-center">
+            {user ? (
+              <>
+                <Link
+                  href={dashboardHref}
+                  className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold text-lg"
+                >
+                  Go to Dashboard
+                </Link>
+                <Link
+                  href="/map"
+                  className="px-8 py-3 bg-white text-blue-600 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-semibold text-lg"
+                >
+                  View Property Map
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold text-lg"
+                >
+                  Sign In to Dashboard
+                </Link>
+                <Link
+                  href="/map"
+                  className="px-8 py-3 bg-white text-blue-600 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-semibold text-lg"
+                >
+                  View Property Map
+                </Link>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Features Grid */}
@@ -297,13 +338,27 @@ export default async function Home() {
       {/* Footer */}
       <footer className="mt-24 border-t border-gray-200 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="mb-4 md:mb-0">
               <h3 className="text-xl font-bold text-blue-600">VER System</h3>
               <p className="text-sm text-gray-600">Records Encryption & Verification</p>
             </div>
-            <div className="text-sm text-gray-600">
-              <p>© {new Date().getFullYear()} VER System. All rights reserved.</p>
+            <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
+              <Link
+                href="/map"
+                className="text-gray-600 hover:text-blue-600 transition-colors font-medium"
+              >
+                Property Map
+              </Link>
+              {!user && (
+                <Link
+                  href="/login"
+                  className="text-gray-600 hover:text-blue-600 transition-colors font-medium"
+                >
+                  Sign In
+                </Link>
+              )}
+              <p className="text-gray-600">© {new Date().getFullYear()} VER System. All rights reserved.</p>
             </div>
           </div>
         </div>
