@@ -7,6 +7,7 @@
 
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import VerTopNav from '@/components/layout/VerTopNav'
 import { requireRole } from '@/lib/auth/require-role'
 import {
   getDocument,
@@ -98,33 +99,10 @@ export default async function DocumentDetailPage({
   const property = await getProperty(document.property_id)
   const timeline = buildTimeline(document, hashes, verifications)
 
-  const dashboardHref =
-    {
-      staff: '/dashboard/staff',
-      verifier: '/dashboard/verifier',
-      chief_registrar: '/dashboard/chief-registrar',
-      admin: '/dashboard/admin',
-    }[user.role] ?? '/dashboard/staff'
-
   return (
     <div className="min-h-screen bg-gray-50">
+      <VerTopNav />
       <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="mb-4 flex flex-wrap items-center gap-3">
-          <Link
-            href="/documents"
-            className="text-sm font-medium text-blue-600 hover:text-blue-500"
-          >
-            ← Documents
-          </Link>
-          <span className="text-gray-400">|</span>
-          <Link
-            href={dashboardHref}
-            className="text-sm font-medium text-blue-600 hover:text-blue-500"
-          >
-            Dashboard
-          </Link>
-        </div>
-
         <div className="bg-white rounded-lg shadow mb-6">
           <div className="px-6 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-4">
             <div>

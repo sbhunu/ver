@@ -10,6 +10,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import VerTopNav from '@/components/layout/VerTopNav'
 import type { Property } from '@/lib/types'
 
 const STATUS_OPTIONS = [
@@ -21,12 +22,11 @@ const STATUS_OPTIONS = [
 
 export interface PropertyEditFormProps {
   property: Property
-  dashboardHref: string
+  dashboardHref?: string
 }
 
 export default function PropertyEditForm({
   property,
-  dashboardHref,
 }: PropertyEditFormProps) {
   const router = useRouter()
   const [address, setAddress] = useState(property.address)
@@ -68,30 +68,8 @@ export default function PropertyEditForm({
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <VerTopNav />
       <div className="max-w-2xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="mb-4 flex flex-wrap items-center gap-3">
-          <Link
-            href={`/properties/${property.id}`}
-            className="text-sm font-medium text-blue-600 hover:text-blue-500"
-          >
-            ← Property
-          </Link>
-          <span className="text-gray-400">|</span>
-          <Link
-            href="/properties"
-            className="text-sm font-medium text-blue-600 hover:text-blue-500"
-          >
-            Properties
-          </Link>
-          <span className="text-gray-400">|</span>
-          <Link
-            href={dashboardHref}
-            className="text-sm font-medium text-blue-600 hover:text-blue-500"
-          >
-            Dashboard
-          </Link>
-        </div>
-
         <div className="bg-white rounded-lg shadow">
           <div className="px-6 py-4 border-b border-gray-200">
             <h1 className="text-2xl font-bold text-gray-900">Edit property</h1>

@@ -10,6 +10,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import VerTopNav from '@/components/layout/VerTopNav'
 import dynamic from 'next/dynamic'
 import StatusBadge from '@/components/dashboard/StatusBadge'
 import type { Property } from '@/lib/types'
@@ -25,13 +26,6 @@ const PropertyMap = dynamic(
     ),
   }
 )
-
-const ROLE_DASHBOARDS: Record<string, string> = {
-  staff: '/dashboard/staff',
-  verifier: '/dashboard/verifier',
-  chief_registrar: '/dashboard/chief-registrar',
-  admin: '/dashboard/admin',
-}
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All statuses' },
@@ -89,8 +83,6 @@ export default function PropertyList({ user }: PropertyListProps) {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [searchInput, setSearchInput] = useState('')
 
-  const dashboardHref = ROLE_DASHBOARDS[user.role] ?? '/dashboard/staff'
-
   // Debounce search input
   useEffect(() => {
     const t = setTimeout(() => setSearch(searchInput), 300)
@@ -141,16 +133,8 @@ export default function PropertyList({ user }: PropertyListProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <VerTopNav />
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="mb-4">
-          <Link
-            href={dashboardHref}
-            className="text-sm font-medium text-blue-600 hover:text-blue-500"
-          >
-            ← Back to Dashboard
-          </Link>
-        </div>
-
         <div className="bg-white rounded-lg shadow">
           <div className="px-6 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-4">
             <div>

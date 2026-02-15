@@ -10,17 +10,11 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
+import VerTopNav from '@/components/layout/VerTopNav'
 import { createClient } from '@/lib/supabase/client'
 import { useRealtimeDocuments } from '@/lib/hooks/useRealtimeDocuments'
 import StatusBadge from '@/components/dashboard/StatusBadge'
 import type { Document } from '@/lib/types'
-
-const ROLE_DASHBOARDS: Record<string, string> = {
-  staff: '/dashboard/staff',
-  verifier: '/dashboard/verifier',
-  chief_registrar: '/dashboard/chief-registrar',
-  admin: '/dashboard/admin',
-}
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All statuses' },
@@ -61,8 +55,6 @@ export default function DocumentList({ user }: DocumentListProps) {
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
 
-  const dashboardHref = ROLE_DASHBOARDS[user.role] ?? '/dashboard/staff'
-
   const { documents, loading, error } = useRealtimeDocuments({
     status: statusFilter || undefined,
     propertyId: propertyFilter || undefined,
@@ -99,16 +91,8 @@ export default function DocumentList({ user }: DocumentListProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <VerTopNav />
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="mb-4">
-          <Link
-            href={dashboardHref}
-            className="text-sm font-medium text-blue-600 hover:text-blue-500"
-          >
-            ← Back to Dashboard
-          </Link>
-        </div>
-
         <div className="bg-white rounded-lg shadow">
           <div className="px-6 py-4 border-b border-gray-200">
             <h1 className="text-2xl font-bold text-gray-900">Documents</h1>

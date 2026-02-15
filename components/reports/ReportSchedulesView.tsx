@@ -9,6 +9,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import VerTopNav from '@/components/layout/VerTopNav'
 
 const REPORT_TYPES = [
   { value: 'audit-logs', label: 'Audit logs' },
@@ -406,6 +407,7 @@ export default function ReportSchedulesView({ user }: ReportSchedulesViewProps) 
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <VerTopNav />
       <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <Link href="/reports" className="text-sm font-medium text-blue-600 hover:text-blue-500">

@@ -9,6 +9,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import VerTopNav from '@/components/layout/VerTopNav'
 
 interface ImportResult {
   total: number
@@ -19,13 +20,6 @@ interface ImportResult {
   errors: Array<{ rowNumber: number; property_no?: string; error: string; errorCode: string }>
   importId: string
   durationMs: number
-}
-
-const ROLE_DASHBOARDS: Record<string, string> = {
-  staff: '/dashboard/staff',
-  verifier: '/dashboard/verifier',
-  chief_registrar: '/dashboard/chief-registrar',
-  admin: '/dashboard/admin',
 }
 
 interface ImportHistoryEntry {
@@ -44,8 +38,6 @@ export interface PropertyImportViewProps {
 }
 
 export default function PropertyImportView({ user }: PropertyImportViewProps) {
-  const dashboardHref = ROLE_DASHBOARDS[user.role] ?? '/dashboard/chief-registrar'
-
   const [file, setFile] = useState<File | null>(null)
   const [format, setFormat] = useState<'auto' | 'csv' | 'json'>('auto')
   const [skipDuplicates, setSkipDuplicates] = useState(true)
@@ -145,23 +137,8 @@ export default function PropertyImportView({ user }: PropertyImportViewProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <VerTopNav />
       <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="mb-4 flex flex-wrap items-center gap-3">
-          <Link
-            href="/properties"
-            className="text-sm font-medium text-blue-600 hover:text-blue-500"
-          >
-            ← Properties
-          </Link>
-          <span className="text-gray-400">|</span>
-          <Link
-            href={dashboardHref}
-            className="text-sm font-medium text-blue-600 hover:text-blue-500"
-          >
-            Dashboard
-          </Link>
-        </div>
-
         <div className="bg-white rounded-lg shadow mb-6">
           <div className="px-6 py-4 border-b border-gray-200">
             <h1 className="text-2xl font-bold text-gray-900">Property Import</h1>

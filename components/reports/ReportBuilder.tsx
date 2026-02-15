@@ -9,6 +9,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import VerTopNav from '@/components/layout/VerTopNav'
 
 const REPORT_TYPES = [
   { value: 'audit-logs', label: 'Audit logs' },
@@ -22,20 +23,11 @@ const FORMATS = [
   { value: 'pdf', label: 'PDF (HTML)' },
 ] as const
 
-const ROLE_DASHBOARDS: Record<string, string> = {
-  staff: '/dashboard/staff',
-  verifier: '/dashboard/verifier',
-  chief_registrar: '/dashboard/chief-registrar',
-  admin: '/dashboard/admin',
-}
-
 export interface ReportBuilderProps {
   user: { id: string; email: string; role: string }
 }
 
 export default function ReportBuilder({ user }: ReportBuilderProps) {
-  const dashboardHref = ROLE_DASHBOARDS[user.role] ?? '/dashboard/chief-registrar'
-
   const [reportType, setReportType] = useState<(typeof REPORT_TYPES)[number]['value']>('audit-logs')
   const [format, setFormat] = useState<(typeof FORMATS)[number]['value']>('json')
   const [startDate, setStartDate] = useState('')
@@ -132,20 +124,14 @@ export default function ReportBuilder({ user }: ReportBuilderProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <VerTopNav />
       <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="mb-4">
           <Link
             href="/reports/schedules"
             className="text-sm font-medium text-blue-600 hover:text-blue-500"
           >
-            Schedules
-          </Link>
-          <span className="text-gray-400">|</span>
-          <Link
-            href={dashboardHref}
-            className="text-sm font-medium text-blue-600 hover:text-blue-500"
-          >
-            Dashboard
+            Report Schedules →
           </Link>
         </div>
 

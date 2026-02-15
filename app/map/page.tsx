@@ -8,6 +8,7 @@
 
 import { Suspense, useState } from 'react'
 import PropertyMap, { type MapFilterOptions, type BaseMapType } from '@/components/map/PropertyMap'
+import VerTopNav from '@/components/layout/VerTopNav'
 import MapFilters from '@/components/map/MapFilters'
 import MapControls from '@/components/map/MapControls'
 import type { Property } from '@/lib/types'
@@ -32,10 +33,11 @@ export default function MapPage() {
   }
 
   return (
-    <div className="map-page-container h-screen flex flex-col">
+    <div className="map-page-container min-h-screen flex flex-col">
+      <VerTopNav />
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 py-3">
-        <h1 className="text-2xl font-bold text-gray-900">Property Map</h1>
+      <header className="bg-white border-b border-gray-200 px-4 py-2 shrink-0">
+        <h1 className="text-xl font-bold text-gray-900">Property Map</h1>
       </header>
 
       {/* Main Content */}

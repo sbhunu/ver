@@ -12,7 +12,8 @@ import type { DocumentHashInsert, DocumentHash } from '@/lib/types'
 
 /**
  * Create document hash record
- * 
+ * Uses RLS policy: staff and above can insert hashes for documents they can access.
+ *
  * @param hashData - Hash data to insert
  * @returns Created hash record
  */

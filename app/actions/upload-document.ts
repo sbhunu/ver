@@ -1,19 +1,21 @@
 /**
  * Document Upload Server Action
- * 
+ *
  * Next.js 16.* App Router server action for secure document upload
- * with validation, metadata capture, and Supabase Storage integration.
+ * with validation and metadata capture. For demo, stores files in
+ * storage_records (local filesystem); references use same path format
+ * as Supabase Storage: property-{id}/documents/{uuid}-{filename}
  */
 
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { validateFileUploadWithHash } from '@/lib/validation'
+import { sanitizeFilename } from '@/lib/utils/file'
 import {
-  sanitizeFilename,
-  getFileMetadata,
-  type FileMetadata,
-} from '@/lib/utils/file'
+  saveToLocalStorage,
+  removeFromLocalStorage,
+} from '@/lib/storage/local-storage'
 import { randomUUID } from 'crypto'
 import { ValidationError, UploadError, DatabaseError } from '@/lib/errors'
 import type { DocumentInsert } from '@/lib/types'
@@ -115,22 +117,18 @@ export async function uploadDocument(formData: FormData) {
     const documentId = randomUUID()
     const storagePath = `property-${propertyId}/documents/${documentId}-${sanitizedFilename}`
 
-    // Upload file to Supabase Storage
+    // Save file to storage_records (local filesystem) for demo
     const fileBuffer = await file.arrayBuffer()
-    const { error: uploadError } = await supabase.storage
-      .from('documents')
-      .upload(storagePath, fileBuffer, {
-        contentType: metadata.mimeType || file.type,
-        upsert: false, // Don't overwrite existing files
-      })
-
-    if (uploadError) {
+    try {
+      await saveToLocalStorage(storagePath, fileBuffer)
+    } catch (uploadError) {
+      const err = uploadError as Error
       throw new UploadError(
-        `Failed to upload file to storage: ${uploadError.message}`,
+        `Failed to save file to storage_records: ${err.message}`,
         {
           filename: file.name,
           storagePath,
-          originalError: uploadError.message,
+          originalError: err.message,
         }
       )
     }
@@ -156,8 +154,8 @@ export async function uploadDocument(formData: FormData) {
       // If hash creation fails, document creation is rolled back
       document = await createDocumentWithHash(documentData, hash)
     } catch (error) {
-      // If database operation fails, clean up uploaded file
-      await supabase.storage.from('documents').remove([storagePath])
+      // If database operation fails, clean up file from storage_records
+      await removeFromLocalStorage(storagePath)
 
       // Re-throw the error
       throw error

@@ -2,7 +2,8 @@
  * Document Download API Route
  *
  * GET /api/documents/[id]/download
- * Creates a short-lived signed URL and redirects to it for download.
+ * Serves document from storage_records (local) or Supabase Storage.
+ * For demo, documents are stored in storage_records and streamed directly.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -10,8 +11,10 @@ import { requireRoleAPI } from '@/lib/auth/require-role'
 import { createClient } from '@/lib/supabase/server'
 import { getDocument } from '@/lib/db/documents'
 import { handleApiError } from '@/lib/errors'
-
-const SIGNED_URL_EXPIRY_SEC = 60
+import {
+  existsInLocalStorage,
+  createReadStreamFromLocalStorage,
+} from '@/lib/storage/local-storage'
 
 export async function GET(
   request: NextRequest,
@@ -27,13 +30,29 @@ export async function GET(
       return NextResponse.json({ error: 'Document not found' }, { status: 404 })
     }
 
+    const { storage_path } = document
+
+    // Serve from storage_records if available (demo mode)
+    if (existsInLocalStorage(storage_path)) {
+      const stream = createReadStreamFromLocalStorage(storage_path)
+      const mimeType = document.mime_type || 'application/octet-stream'
+      const filename = document.original_filename || 'document'
+      return new NextResponse(stream, {
+        headers: {
+          'Content-Type': mimeType,
+          'Content-Disposition': `attachment; filename="${encodeURIComponent(filename)}"`,
+        },
+      })
+    }
+
+    // Fallback to Supabase Storage
     const supabase = await createClient()
     const { data, error } = await supabase.storage
       .from('documents')
-      .createSignedUrl(document.storage_path, SIGNED_URL_EXPIRY_SEC)
+      .createSignedUrl(storage_path, 60)
 
     if (error || !data?.signedUrl) {
-      console.error('Document download signed URL error:', error)
+      console.error('Document download error:', error)
       return NextResponse.json(
         { error: error?.message ?? 'Failed to create download link' },
         { status: 500 }

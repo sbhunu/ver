@@ -8,8 +8,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import VerTopNav from '@/components/layout/VerTopNav'
 import { uploadDocument } from '@/app/actions/upload-document'
 import { useUploadProgress } from '@/lib/hooks/useUploadProgress'
 import { createClient } from '@/lib/supabase/client'
@@ -56,6 +57,7 @@ export default function UploadPage() {
   const [success, setSuccess] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { progress, reset } = useUploadProgress()
 
   useEffect(() => {
@@ -92,6 +94,12 @@ export default function UploadPage() {
     }
     load()
   }, [])
+
+  // Pre-select property from ?property_id=... (e.g. from Property Management page)
+  useEffect(() => {
+    const pid = searchParams.get('property_id')
+    if (pid) setSelectedPropertyId(pid)
+  }, [searchParams])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
@@ -156,7 +164,8 @@ export default function UploadPage() {
         const fileInput = document.getElementById('file-input') as HTMLInputElement
         if (fileInput) fileInput.value = ''
 
-        setTimeout(() => router.push('/documents'), 2000)
+        const returnTo = searchParams.get('returnTo') || '/documents'
+        setTimeout(() => router.push(returnTo), 2000)
       } else {
         setError(result.error || 'Upload failed')
       }
@@ -171,15 +180,8 @@ export default function UploadPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <VerTopNav />
       <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="mb-4">
-          <Link
-            href={dashboardHref}
-            className="text-sm font-medium text-blue-600 hover:text-blue-500"
-          >
-            ← Back to Dashboard
-          </Link>
-        </div>
         <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Upload Document</h1>
@@ -315,7 +317,11 @@ export default function UploadPage() {
                 <div className="flex">
                   <div className="ml-3">
                     <h3 className="text-sm font-medium text-green-800">
-                      Document uploaded successfully! Redirecting to documents list...
+                      Document uploaded successfully! Redirecting to{' '}
+                      {searchParams.get('returnTo') === '/properties/management'
+                        ? 'Property Management'
+                        : 'documents list'}
+                      ...
                     </h3>
                   </div>
                 </div>

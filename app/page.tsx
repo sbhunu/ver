@@ -38,15 +38,39 @@ export default async function Home() {
               </span>
             </div>
             <div className="flex items-center gap-3 sm:gap-4">
-              {/* Property Map: public access for everyone */}
+              {/* Property Management: public access for everyone */}
               <Link
-                href="/map"
+                href="/properties/management"
                 className="px-3 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors text-sm font-medium"
               >
-                Property Map
+                Property Management
               </Link>
               {user ? (
                 <>
+                  <Link
+                    href="/upload"
+                    className="px-3 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors text-sm font-medium hidden sm:block"
+                  >
+                    Upload
+                  </Link>
+                  <Link
+                    href="/documents"
+                    className="px-3 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors text-sm font-medium hidden sm:block"
+                  >
+                    Documents
+                  </Link>
+                  <Link
+                    href="/verify"
+                    className="px-3 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors text-sm font-medium hidden sm:block"
+                  >
+                    Verify
+                  </Link>
+                  <Link
+                    href="/admin/audit-logs"
+                    className="px-3 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors text-sm font-medium hidden md:block"
+                  >
+                    Audit
+                  </Link>
                   <span className="text-sm text-gray-600 truncate max-w-[140px] sm:max-w-none">
                     Welcome, {user.email}
                   </span>
@@ -101,10 +125,10 @@ export default async function Home() {
                   Go to Dashboard
                 </Link>
                 <Link
-                  href="/map"
+                  href="/properties/management"
                   className="px-8 py-3 bg-white text-blue-600 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-semibold text-lg"
                 >
-                  View Property Map
+                  Property Management
                 </Link>
               </>
             ) : (
@@ -116,10 +140,10 @@ export default async function Home() {
                   Sign In to Dashboard
                 </Link>
                 <Link
-                  href="/map"
+                  href="/properties/management"
                   className="px-8 py-3 bg-white text-blue-600 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-semibold text-lg"
                 >
-                  View Property Map
+                  Property Management
                 </Link>
               </>
             )}
@@ -279,42 +303,54 @@ export default async function Home() {
             How It Works
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+            <Link
+              href="/upload"
+              className="text-center block p-4 rounded-xl hover:bg-blue-50 transition-colors group"
+            >
+              <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4 group-hover:bg-blue-700 transition-colors">
                 1
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Upload</h3>
               <p className="text-gray-600 text-sm">
                 Staff uploads property deed documents (PDF, DOC, DOCX) and associates them with properties.
               </p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+            </Link>
+            <Link
+              href="/documents"
+              className="text-center block p-4 rounded-xl hover:bg-blue-50 transition-colors group"
+            >
+              <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4 group-hover:bg-blue-700 transition-colors">
                 2
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Hash</h3>
               <p className="text-gray-600 text-sm">
                 System computes SHA-256 hash of the document and stores it as a cryptographic fingerprint.
               </p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+            </Link>
+            <Link
+              href="/verify"
+              className="text-center block p-4 rounded-xl hover:bg-blue-50 transition-colors group"
+            >
+              <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4 group-hover:bg-blue-700 transition-colors">
                 3
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Verify</h3>
               <p className="text-gray-600 text-sm">
                 Verifier uploads comparison document. System recomputes hash and compares to stored hash.
               </p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+            </Link>
+            <Link
+              href="/admin/audit-logs"
+              className="text-center block p-4 rounded-xl hover:bg-blue-50 transition-colors group"
+            >
+              <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4 group-hover:bg-blue-700 transition-colors">
                 4
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Audit</h3>
               <p className="text-gray-600 text-sm">
                 All actions are logged with timestamps and user identity for legal compliance and oversight.
               </p>
-            </div>
+            </Link>
           </div>
         </div>
 
@@ -345,10 +381,10 @@ export default async function Home() {
             </div>
             <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
               <Link
-                href="/map"
+                href="/properties/management"
                 className="text-gray-600 hover:text-blue-600 transition-colors font-medium"
               >
-                Property Map
+                Property Management
               </Link>
               {!user && (
                 <Link

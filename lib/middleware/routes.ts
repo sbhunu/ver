@@ -45,9 +45,15 @@ export const ROLE_ROUTES: Record<string, UserRoleType[]> = {
   '/dashboard/verifier': ['verifier', 'chief_registrar', 'admin'],
   '/dashboard/chief-registrar': ['chief_registrar', 'admin'],
   '/dashboard/admin': ['admin'],
+  '/admin/audit-logs': ['chief_registrar', 'admin'],
   '/admin': ['admin'],
   '/verifier': ['verifier', 'chief_registrar', 'admin'],
   '/registrar': ['chief_registrar', 'admin'],
+  '/upload': ['staff', 'verifier', 'admin'],
+  '/documents': ['staff', 'verifier', 'chief_registrar', 'admin'],
+  '/properties/management': ['staff', 'verifier', 'chief_registrar', 'admin'],
+  '/properties/new': ['staff', 'verifier', 'chief_registrar', 'admin'],
+  '/properties/import': ['chief_registrar', 'admin'],
 } as const
 
 /**

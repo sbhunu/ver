@@ -10,6 +10,7 @@
 import { useMemo } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
+import VerTopNav from '@/components/layout/VerTopNav'
 import StatusBadge from '@/components/dashboard/StatusBadge'
 import type { Property, Document } from '@/lib/types'
 import type { Geometry } from 'geojson'
@@ -18,13 +19,6 @@ const PropertyGeometryMap = dynamic(
   () => import('./PropertyGeometryMap').then((m) => m.default),
   { ssr: false, loading: () => <div className="h-[400px] rounded-lg bg-gray-100 animate-pulse" /> }
 )
-
-const ROLE_DASHBOARDS: Record<string, string> = {
-  staff: '/dashboard/staff',
-  verifier: '/dashboard/verifier',
-  chief_registrar: '/dashboard/chief-registrar',
-  admin: '/dashboard/admin',
-}
 
 function formatDate(s: string | null) {
   if (!s) return '—'
@@ -55,30 +49,14 @@ export default function PropertyDetailView({
   documents,
   user,
 }: PropertyDetailViewProps) {
-  const dashboardHref = ROLE_DASHBOARDS[user.role] ?? '/dashboard/staff'
   const canEdit = user.role === 'admin' || user.role === 'chief_registrar'
   const geometry = useMemo(() => geomToGeoJSON(property.geom), [property.geom])
   const hasMetadata = property.metadata && Object.keys(property.metadata).length > 0
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <VerTopNav />
       <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="mb-4 flex flex-wrap items-center gap-3">
-          <Link
-            href="/properties"
-            className="text-sm font-medium text-blue-600 hover:text-blue-500"
-          >
-            ← Properties
-          </Link>
-          <span className="text-gray-400">|</span>
-          <Link
-            href={dashboardHref}
-            className="text-sm font-medium text-blue-600 hover:text-blue-500"
-          >
-            Dashboard
-          </Link>
-        </div>
-
         <div className="bg-white rounded-lg shadow mb-6">
           <div className="px-6 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-4">
             <div>

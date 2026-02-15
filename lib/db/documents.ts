@@ -350,7 +350,7 @@ export async function createDocumentWithHash(
   // Create document
   const document = await createDocument(documentData)
 
-  // Create hash record
+  // Create hash record (RLS policy allows staff to insert)
   const { error: hashError } = await supabase.from('ver_document_hashes').insert({
     document_id: document.id,
     sha256_hash: hash,

@@ -46,10 +46,10 @@ interface MenuGroup {
 type MenuEntry = MenuLink | MenuGroup
 
 const menuEntries: MenuEntry[] = [
-  { type: 'link', label: 'Staff Dashboard', href: '/dashboard/staff', roles: ['staff'], icon: '📄' },
-  { type: 'link', label: 'Verifier Dashboard', href: '/dashboard/verifier', roles: ['verifier'], icon: '✅' },
+  { type: 'link', label: 'Staff Dashboard', href: '/dashboard/staff', roles: ['staff', 'admin'], icon: '📄' },
+  { type: 'link', label: 'Verifier Dashboard', href: '/dashboard/verifier', roles: ['verifier', 'admin'], icon: '✅' },
   { type: 'link', label: 'Verify', href: '/verify', roles: ['verifier', 'chief_registrar', 'admin'], icon: '🔍' },
-  { type: 'link', label: 'Chief Registrar Dashboard', href: '/dashboard/chief-registrar', roles: ['chief_registrar'], icon: '📊' },
+  { type: 'link', label: 'Chief Registrar Dashboard', href: '/dashboard/chief-registrar', roles: ['chief_registrar', 'admin'], icon: '📊' },
   { type: 'link', label: 'Admin Dashboard', href: '/dashboard/admin', roles: ['admin'], icon: '⚙️' },
   {
     type: 'group',
@@ -58,20 +58,22 @@ const menuEntries: MenuEntry[] = [
     roles: ALL_ROLES,
     children: [
       { label: 'List', href: '/documents', roles: ALL_ROLES },
-      { label: 'Upload', href: '/upload', roles: ['staff', 'verifier'] },
+      { label: 'Upload', href: '/upload', roles: ['staff', 'verifier', 'admin'] },
     ],
   },
   {
     type: 'group',
-    label: 'Properties',
+    label: 'Property & Records Management',
     icon: '🏢',
     roles: ALL_ROLES,
     children: [
-      { label: 'List', href: '/properties', roles: ALL_ROLES },
-      { label: 'Import', href: '/properties/import', roles: ['admin', 'chief_registrar'] },
+      { label: 'Property Management', href: '/properties/management', roles: ALL_ROLES },
+      { label: 'Property List', href: '/properties', roles: ALL_ROLES },
+      { label: 'Add Property', href: '/properties/new', roles: ALL_ROLES },
+      { label: 'Bulk Import', href: '/properties/import', roles: ['admin', 'chief_registrar'] },
+      { label: 'Map', href: '/map', roles: ALL_ROLES },
     ],
   },
-  { type: 'link', label: 'Map', href: '/map', roles: ALL_ROLES, icon: '🗺️' },
   {
     type: 'group',
     label: 'Reports',
@@ -162,7 +164,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="flex flex-col h-full">
             {/* Logo/Header */}
             <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
-              <h1 className="text-xl font-bold text-gray-900">VER Dashboard</h1>
+              <Link href="/" className="text-xl font-bold text-gray-900 hover:text-blue-600">
+                Home VER
+              </Link>
               <button
                 onClick={() => setSidebarOpen(false)}
                 className="lg:hidden text-gray-500 hover:text-gray-700"
